@@ -21,11 +21,12 @@ var (
 	ErrInvalidProjectPath  = errors.New("invalid project path")
 
 	// Command related errors
-	ErrInvalidCommand = errors.New("invalid command")
-	ErrCommandTimeout = errors.New("command execution timeout")
-	ErrCommandFailed  = errors.New("command execution failed")
-	ErrEmptyQuery     = errors.New("empty query provided")
-	ErrAmbiguousQuery = errors.New("ambiguous query requires clarification")
+	ErrInvalidCommand  = errors.New("invalid command")
+	ErrCommandTimeout  = errors.New("command execution timeout")
+	ErrCommandFailed   = errors.New("command execution failed")
+	ErrEmptyQuery      = errors.New("empty query provided")
+	ErrAmbiguousQuery  = errors.New("ambiguous query requires clarification")
+	ErrCommandNotFound = errors.New("command not found")
 
 	// File related errors
 	ErrFileNotFound        = errors.New("file not found")
