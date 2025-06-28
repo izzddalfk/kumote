@@ -1,9 +1,9 @@
-// internal/assistant/core/service.go
 package core
 
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 )
@@ -18,7 +18,6 @@ type Service struct {
 	commandRepo      CommandRepository
 	metricsCollector MetricsCollector
 	configProvider   ConfigProvider
-	logger           Logger
 	rateLimiter      RateLimiter
 }
 
@@ -32,7 +31,6 @@ func NewService(
 	commandRepo CommandRepository,
 	metricsCollector MetricsCollector,
 	configProvider ConfigProvider,
-	logger Logger,
 	rateLimiter RateLimiter,
 ) *Service {
 	return &Service{
@@ -44,7 +42,6 @@ func NewService(
 		commandRepo:      commandRepo,
 		metricsCollector: metricsCollector,
 		configProvider:   configProvider,
-		logger:           logger,
 		rateLimiter:      rateLimiter,
 	}
 }
@@ -63,10 +60,9 @@ func (s *Service) ProcessCommand(ctx context.Context, cmd Command) (*QueryResult
 
 	// Record the request
 	if err := s.rateLimiter.RecordRequest(ctx, cmd.UserID); err != nil {
-		s.logger.Warn(ctx, "Failed to record rate limit request", map[string]any{
-			"user_id": cmd.UserID,
-			"error":   err.Error(),
-		})
+		slog.WarnContext(ctx, "Failed to record rate limit request",
+			slog.Int64("user_id", cmd.UserID),
+			slog.String("error", err.Error()))
 	}
 
 	// Check user permissions
@@ -84,10 +80,9 @@ func (s *Service) ProcessCommand(ctx context.Context, cmd Command) (*QueryResult
 
 	// Save command to history
 	if err := s.commandRepo.SaveCommand(ctx, &cmd); err != nil {
-		s.logger.Warn(ctx, "Failed to save command", map[string]any{
-			"command_id": cmd.ID,
-			"error":      err.Error(),
-		})
+		slog.WarnContext(ctx, "Failed to save command",
+			slog.String("command_id", cmd.ID),
+			slog.String("error", err.Error()))
 	}
 
 	// Process the command
@@ -169,15 +164,16 @@ func (s *Service) ListProjects(ctx context.Context) ([]Project, error) {
 
 // RefreshProjects triggers a manual refresh of project index
 func (s *Service) RefreshProjects(ctx context.Context) error {
-	s.logger.Info(ctx, "Starting manual project refresh", nil)
+	slog.InfoContext(ctx, "Starting manual project refresh")
 
 	_, err := s.projectScanner.UpdateIndex(ctx)
 	if err != nil {
-		s.logger.Error(ctx, "Failed to refresh projects", err, nil)
+		slog.ErrorContext(ctx, "Failed to refresh projects",
+			slog.String("error", err.Error()))
 		return fmt.Errorf("failed to refresh projects: %w", err)
 	}
 
-	s.logger.Info(ctx, "Project refresh completed successfully", nil)
+	slog.InfoContext(ctx, "Project refresh completed successfully")
 	return nil
 }
 
@@ -206,10 +202,9 @@ func (s *Service) processUserQuery(ctx context.Context, query string, userID int
 		}, nil
 	}
 
-	s.logger.Info(ctx, "Processing user query", map[string]any{
-		"user_id": userID,
-		"query":   query,
-	})
+	slog.InfoContext(ctx, "Processing user query",
+		slog.Int64("user_id", userID),
+		slog.String("query", query))
 
 	// Check if AI Code Executor is available
 	if !s.aiExecutor.IsAvailable(ctx) {
@@ -466,9 +461,8 @@ func (s *Service) recordMetrics(ctx context.Context, cmd Command, startTime time
 	}
 
 	if err := s.metricsCollector.RecordCommandExecution(ctx, metrics); err != nil {
-		s.logger.Warn(ctx, "Failed to record metrics", map[string]any{
-			"command_id": cmd.ID,
-			"error":      err.Error(),
-		})
+		slog.WarnContext(ctx, "Failed to record metrics",
+			slog.String("command_id", cmd.ID),
+			slog.String("error", err.Error()))
 	}
 }

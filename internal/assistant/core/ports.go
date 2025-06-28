@@ -1,4 +1,3 @@
-// internal/assistant/core/ports.go
 package core
 
 import (
@@ -149,21 +148,6 @@ type ConfigProvider interface {
 
 	// GetRateLimit returns rate limiting configuration
 	GetRateLimit(ctx context.Context) (int, error)
-}
-
-// Logger defines interface for structured logging
-type Logger interface {
-	// Info logs info level message
-	Info(ctx context.Context, message string, fields map[string]any)
-
-	// Error logs error level message
-	Error(ctx context.Context, message string, err error, fields map[string]any)
-
-	// Debug logs debug level message
-	Debug(ctx context.Context, message string, fields map[string]any)
-
-	// Warn logs warning level message
-	Warn(ctx context.Context, message string, fields map[string]any)
 }
 
 // FileSystem defines interface for file system operations

@@ -14,7 +14,7 @@ import (
 
 // Test Helper Functions
 
-func createTestService() (*core.Service, *MockProjectScanner, *MockAICodeExecutor, *MockUserRepository, *MockRateLimiter, *MockCommandRepository, *MockLogger, *MockMetricsCollector) {
+func createTestService() (*core.Service, *MockProjectScanner, *MockAICodeExecutor, *MockUserRepository, *MockRateLimiter, *MockCommandRepository, *MockMetricsCollector) {
 	mockProjectScanner := &MockProjectScanner{}
 	mockAIExecutor := &MockAICodeExecutor{}
 	mockTelegramNotifier := &MockTelegramNotifier{}
@@ -23,7 +23,6 @@ func createTestService() (*core.Service, *MockProjectScanner, *MockAICodeExecuto
 	mockCommandRepo := &MockCommandRepository{}
 	mockMetricsCollector := &MockMetricsCollector{}
 	mockConfigProvider := &MockConfigProvider{}
-	mockLogger := &MockLogger{}
 	mockRateLimiter := &MockRateLimiter{}
 
 	service := core.NewService(
@@ -35,11 +34,10 @@ func createTestService() (*core.Service, *MockProjectScanner, *MockAICodeExecuto
 		mockCommandRepo,
 		mockMetricsCollector,
 		mockConfigProvider,
-		mockLogger,
 		mockRateLimiter,
 	)
 
-	return service, mockProjectScanner, mockAIExecutor, mockUserRepo, mockRateLimiter, mockCommandRepo, mockLogger, mockMetricsCollector
+	return service, mockProjectScanner, mockAIExecutor, mockUserRepo, mockRateLimiter, mockCommandRepo, mockMetricsCollector
 }
 
 func createTestProjectIndex() *core.ProjectIndex {
@@ -99,7 +97,7 @@ func createTestUser(userID int64, isAllowed bool) *core.User {
 
 func TestService_ProcessCommand_Success(t *testing.T) {
 	ctx := context.Background()
-	service, mockProjectScanner, mockAIExecutor, mockUserRepo, mockRateLimiter, mockCommandRepo, mockLogger, mockMetricsCollector := createTestService()
+	service, mockProjectScanner, mockAIExecutor, mockUserRepo, mockRateLimiter, mockCommandRepo, mockMetricsCollector := createTestService()
 
 	userID := int64(123456789)
 	cmd := createTestCommand(userID, "show taqwa main.go")
@@ -115,10 +113,6 @@ func TestService_ProcessCommand_Success(t *testing.T) {
 
 	// Add expectation for SaveCommand
 	mockCommandRepo.On("SaveCommand", ctx, mock.AnythingOfType("*core.Command")).Return(nil)
-
-	// Add expectations for Logger
-	mockLogger.On("Info", ctx, mock.AnythingOfType("string"), mock.AnythingOfType("map[string]interface {}")).Return()
-	mockLogger.On("Debug", ctx, mock.AnythingOfType("string"), mock.AnythingOfType("map[string]interface {}")).Return()
 
 	// Add expectation for MetricsCollector
 	mockMetricsCollector.On("RecordCommandExecution", ctx, mock.AnythingOfType("core.CommandMetrics")).Return(nil)
@@ -156,7 +150,7 @@ func TestService_ProcessCommand_Success(t *testing.T) {
 
 func TestService_ProcessCommand_RateLimitExceeded(t *testing.T) {
 	ctx := context.Background()
-	service, _, _, _, mockRateLimiter, _, _, _ := createTestService()
+	service, _, _, _, mockRateLimiter, _, _ := createTestService()
 
 	userID := int64(123456789)
 	cmd := createTestCommand(userID, "list projects")
@@ -178,7 +172,7 @@ func TestService_ProcessCommand_RateLimitExceeded(t *testing.T) {
 
 func TestService_ProcessCommand_UserNotAuthorized(t *testing.T) {
 	ctx := context.Background()
-	service, _, _, mockUserRepo, mockRateLimiter, _, _, _ := createTestService()
+	service, _, _, mockUserRepo, mockRateLimiter, _, _ := createTestService()
 
 	userID := int64(123456789)
 	cmd := createTestCommand(userID, "list projects")
@@ -204,7 +198,7 @@ func TestService_ProcessCommand_UserNotAuthorized(t *testing.T) {
 
 func TestService_ProcessCommand_AICodeExecutorUnavailable(t *testing.T) {
 	ctx := context.Background()
-	service, mockProjectScanner, mockAIExecutor, mockUserRepo, mockRateLimiter, mockCommandRepo, mockLogger, mockMetricsCollector := createTestService()
+	service, mockProjectScanner, mockAIExecutor, mockUserRepo, mockRateLimiter, mockCommandRepo, mockMetricsCollector := createTestService()
 
 	userID := int64(123456789)
 	cmd := createTestCommand(userID, "show taqwa main.go")
@@ -218,10 +212,6 @@ func TestService_ProcessCommand_AICodeExecutorUnavailable(t *testing.T) {
 
 	// Add expectation for SaveCommand
 	mockCommandRepo.On("SaveCommand", ctx, mock.AnythingOfType("*core.Command")).Return(nil)
-
-	// Add expectations for Logger
-	mockLogger.On("Info", ctx, mock.AnythingOfType("string"), mock.AnythingOfType("map[string]interface {}")).Return()
-	mockLogger.On("Debug", ctx, mock.AnythingOfType("string"), mock.AnythingOfType("map[string]interface {}")).Return()
 
 	// Add expectation for MetricsCollector
 	mockMetricsCollector.On("RecordCommandExecution", ctx, mock.AnythingOfType("core.CommandMetrics")).Return(nil)
@@ -243,7 +233,7 @@ func TestService_ProcessCommand_AICodeExecutorUnavailable(t *testing.T) {
 
 func TestService_ListProjects_Success(t *testing.T) {
 	ctx := context.Background()
-	service, mockProjectScanner, _, _, _, _, _, _ := createTestService()
+	service, mockProjectScanner, _, _, _, _, _ := createTestService()
 
 	testIndex := createTestProjectIndex()
 	mockProjectScanner.On("GetProjectIndex", ctx).Return(testIndex, nil)
@@ -434,26 +424,6 @@ func (m *MockConfigProvider) GetAllowedUserIDs(ctx context.Context) ([]int64, er
 func (m *MockConfigProvider) GetRateLimit(ctx context.Context) (int, error) {
 	args := m.Called(ctx)
 	return args.Int(0), args.Error(1)
-}
-
-type MockLogger struct {
-	mock.Mock
-}
-
-func (m *MockLogger) Info(ctx context.Context, message string, fields map[string]any) {
-	m.Called(ctx, message, fields)
-}
-
-func (m *MockLogger) Error(ctx context.Context, message string, err error, fields map[string]any) {
-	m.Called(ctx, message, err, fields)
-}
-
-func (m *MockLogger) Debug(ctx context.Context, message string, fields map[string]any) {
-	m.Called(ctx, message, fields)
-}
-
-func (m *MockLogger) Warn(ctx context.Context, message string, fields map[string]any) {
-	m.Called(ctx, message, fields)
 }
 
 type MockRateLimiter struct {
