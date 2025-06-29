@@ -264,3 +264,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Kumote** - Extending your development reach through the cloud ☁️✋
+
+Telegram Webhooks:
+
+- https://core.telegram.org/bots/webhooks
+- https://core.telegram.org/bots/api#setwebhook
