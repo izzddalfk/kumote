@@ -102,8 +102,6 @@ func (d *Dependencies) Cleanup() {
 func setupLogger(logLevel string, isDevelopment bool) *slog.Logger {
 	var level slog.Level
 	switch logLevel {
-	case "debug":
-		level = slog.LevelDebug
 	case "info":
 		level = slog.LevelInfo
 	case "warn":
@@ -111,7 +109,7 @@ func setupLogger(logLevel string, isDevelopment bool) *slog.Logger {
 	case "error":
 		level = slog.LevelError
 	default:
-		level = slog.LevelInfo
+		level = slog.LevelDebug
 	}
 
 	opts := &slog.HandlerOptions{
