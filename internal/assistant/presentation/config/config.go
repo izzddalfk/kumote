@@ -50,11 +50,10 @@ func LoadConfig() (*ServerConfig, error) {
 		IdleTimeout:        120 * time.Second,
 		ShutdownTimeout:    30 * time.Second,
 		RateLimitPerMinute: 10,
-		LogLevel:           "info",
 		Environment:        "development",
 		Version:            "1.0.0",
 		DevelopmentPath:    "~/Development",
-		ClaudeCodePath:     "/usr/local/bin/claude-code",
+		ClaudeCodePath:     os.Getenv("CLAUDE_CODE_PATH"),
 	}
 
 	// Load from environment variables
@@ -93,8 +92,8 @@ func LoadConfig() (*ServerConfig, error) {
 		config.DevelopmentPath = devPath
 	}
 
-	if claudePath := os.Getenv("CLAUDE_CODE_PATH"); claudePath != "" {
-		config.ClaudeCodePath = claudePath
+	if config.ClaudeCodePath == "" {
+		return nil, fmt.Errorf("CLAUDE_CODE_PATH environment variable is required")
 	}
 
 	// Logging and debugging

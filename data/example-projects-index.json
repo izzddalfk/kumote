@@ -1,0 +1,57 @@
+{
+  "projects": [
+    {
+      "name": "remote-assistant",
+      "path": "/home/mzk/Works/Personal/Development/remote-assistant",
+      "type": "go",
+      "tech_stack": ["go"],
+      "purpose": "A command-line assistant tool for remote project management and code execution",
+      "key_files": ["go.mod", "Makefile", "README.md"],
+      "status": "active",
+      "last_commit": "2025-06-20T15:30:45Z",
+      "shortcuts": ["ra", "asst"],
+      "metadata": {
+        "version": "1.0.0"
+      }
+    },
+    {
+      "name": "personal-website",
+      "path": "/home/mzk/Works/Personal/Development/personal-website",
+      "type": "nodejs",
+      "tech_stack": ["nodejs", "astrojs"],
+      "purpose": "My personal website built with Astro.js and deployed on Github Pages",
+      "key_files": ["package.json", "README.md"],
+      "status": "active",
+      "last_commit": "2025-01-10T09:15:30Z",
+      "shortcuts": ["personal_web", "my_blog"],
+      "metadata": {
+        "dependencies": "Bun, Astro.js, Vue.JS, Tailwind CSS"
+      }
+    },
+    {
+      "name": "carlogbook",
+      "path": "/home/mzk/Works/Personal/Development/carlogbook",
+      "type": "nodejs",
+      "tech_stack": ["Vue.JS", "nodejs", "tailwindcss", "bun"],
+      "purpose": "A digital automotive logbook application that allows users to track and manage their vehicle service history with automatic receipt scanning using OCR.",
+      "key_files": ["package.json", "README.md"],
+      "status": "active",
+      "last_commit": "2025-06-15T11:22:33Z",
+      "shortcuts": ["carlogbook", "car_log"],
+      "metadata": {
+        "python_version": "3.10"
+      }
+    }
+  ],
+  "updated_at": "2025-06-28T18:30:45Z",
+  "total_count": 3,
+  "scan_path": "/home/mzk/Works/Personal/Development",
+  "shortcuts": {
+    "ra": "remote-assistant",
+    "asst": "remote-assistant",
+    "personal_web": "personal-website",
+    "my_blog": "personal-website",
+    "carlogbook": "carlogbook",
+    "car_log": "carlogbook"
+  }
+}

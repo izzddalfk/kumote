@@ -29,6 +29,9 @@ type AssistantService interface {
 
 	// GetUserPermissions checks if user is allowed to use the assistant
 	GetUserPermissions(ctx context.Context, userID int64) (*User, error)
+
+	// RespondToCommand processes a command result to notify the user about the result
+	RespondToCommand(ctx context.Context, userID int64, result *QueryResult) error
 }
 
 // Secondary Ports (SPIs that are driven by our application)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -381,13 +382,14 @@ func (c *ClaudeExecutor) ExecuteGitCommand(ctx context.Context, gitCmd string, e
 // IsAvailable checks if AI code executor is available and working
 func (c *ClaudeExecutor) IsAvailable(ctx context.Context) bool {
 	cmd := exec.CommandContext(ctx, c.executablePath, "-p", "--output-format", "json", "Are you available?")
-	err := cmd.Run()
+	availableResult, err := cmd.CombinedOutput()
+	slog.DebugContext(ctx, fmt.Sprintf("Claude code availability result: %s", string(availableResult)))
 	return err == nil
 }
 
 // runClaudeCommand executes a Claude command with the given prompt and options
 func (c *ClaudeExecutor) runClaudeCommand(ctx context.Context, prompt, workDir string, extraArgs ...string) (string, error) {
-	args := []string{"-p"}
+	args := []string{}
 
 	// Add model if specified
 	if c.defaultModel != "" {
@@ -395,9 +397,9 @@ func (c *ClaudeExecutor) runClaudeCommand(ctx context.Context, prompt, workDir s
 	}
 
 	// Add debug flag if enabled
-	if c.debug {
-		args = append(args, "--debug")
-	}
+	// if c.debug {
+	// 	args = append(args, "--debug")
+	// }
 
 	// Add extra arguments
 	args = append(args, extraArgs...)
@@ -407,8 +409,16 @@ func (c *ClaudeExecutor) runClaudeCommand(ctx context.Context, prompt, workDir s
 		args = append(args, "--add-dir", workDir)
 	}
 
+	// IMPORTANT: Add --print option in the last position
+	args = append(args, "-p")
+
 	// Add prompt as the last argument
 	args = append(args, prompt)
+
+	slog.DebugContext(ctx, "Executing Claude command",
+		slog.String("executable", c.executablePath),
+		slog.Any("args", args),
+	)
 
 	// Create and execute the command
 	cmd := exec.CommandContext(ctx, c.executablePath, args...)

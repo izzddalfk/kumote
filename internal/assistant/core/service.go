@@ -52,10 +52,17 @@ func (s *Service) ProcessCommand(ctx context.Context, cmd Command) (*QueryResult
 
 	// Check rate limiting
 	if !s.rateLimiter.IsAllowed(ctx, cmd.UserID) {
-		return &QueryResult{
+		result := &QueryResult{
 			Success: false,
 			Error:   "Rate limit exceeded. Please try again later.",
-		}, nil
+		}
+		// Respond to the user with the rate limit error
+		if err := s.RespondToCommand(ctx, cmd.UserID, result); err != nil {
+			slog.ErrorContext(ctx, "Failed to send rate limit error response",
+				slog.Int64("user_id", cmd.UserID),
+				slog.String("error", err.Error()))
+		}
+		return result, nil
 	}
 
 	// Record the request
@@ -72,10 +79,17 @@ func (s *Service) ProcessCommand(ctx context.Context, cmd Command) (*QueryResult
 	}
 
 	if !user.IsAllowed {
-		return &QueryResult{
+		result := &QueryResult{
 			Success: false,
 			Error:   "You are not authorized to use this assistant.",
-		}, nil
+		}
+		// Respond to the user with the authorization error
+		if err := s.RespondToCommand(ctx, cmd.UserID, result); err != nil {
+			slog.ErrorContext(ctx, "Failed to send authorization error response",
+				slog.Int64("user_id", cmd.UserID),
+				slog.String("error", err.Error()))
+		}
+		return result, nil
 	}
 
 	// Save command to history
@@ -98,6 +112,14 @@ func (s *Service) ProcessCommand(ctx context.Context, cmd Command) (*QueryResult
 		projectUsed = result.Projects[0].Name
 	}
 	s.recordMetrics(ctx, cmd, startTime, result.Success, projectUsed)
+
+	// Respond to the user with the result
+	if err := s.RespondToCommand(ctx, cmd.UserID, result); err != nil {
+		slog.ErrorContext(ctx, "Failed to send command response",
+			slog.Int64("user_id", cmd.UserID),
+			slog.String("error", err.Error()))
+		// Don't return the error here to ensure we still return the result
+	}
 
 	return result, nil
 }
@@ -192,6 +214,57 @@ func (s *Service) GetUserPermissions(ctx context.Context, userID int64) (*User, 
 	return user, nil
 }
 
+func (s *Service) RespondToCommand(ctx context.Context, userID int64, result *QueryResult) error {
+	if result == nil {
+		return s.sendErrorToUser(ctx, userID, "No result received.")
+	}
+
+	// Handle error results
+	if !result.Success {
+		slog.ErrorContext(ctx, "Command execution failed",
+			slog.Int64("user_id", userID),
+			slog.String("error", result.Error),
+		)
+		message := result.Error
+		if message == "" {
+			message = "Command failed without specific error message."
+		}
+		return s.telegramNotifier.SendMessage(ctx, userID, fmt.Sprintf("❌ %s", message))
+	}
+
+	// Send files if any
+	for _, file := range result.Files {
+		if file.Content != "" {
+			// By default send as code block. Revisit later based on content length
+			fileReader := strings.NewReader(file.Content)
+			if err := s.telegramNotifier.SendFile(ctx, userID, fileReader, file.Name); err != nil {
+				slog.ErrorContext(ctx, "Failed to send file",
+					"user_id", userID,
+					"filename", file.Name,
+					"error", err.Error(),
+				)
+				// Continue with other files instead of returning error
+			}
+		}
+	}
+
+	// TODO: Send confirmation request if needed
+
+	// Send main response
+	if result.Response != "" {
+		err := s.telegramNotifier.SendFormattedMessage(ctx, userID, result.Response, "HTML")
+		if err != nil {
+			slog.ErrorContext(ctx, "Failed to send response message",
+				"user_id", userID,
+				"error", err.Error(),
+			)
+			return err
+		}
+	}
+
+	return nil
+}
+
 // processUserQuery handles the core logic of processing user queries
 func (s *Service) processUserQuery(ctx context.Context, query string, userID int64) (*QueryResult, error) {
 	query = strings.TrimSpace(query)
@@ -217,18 +290,8 @@ func (s *Service) processUserQuery(ctx context.Context, query string, userID int
 	// Parse the query to determine intent and extract project information
 	intent, projectInfo, enhancedQuery := s.parseQuery(ctx, query)
 
-	// Create execution context
-	execCtx := ExecutionContext{
-		UserID:     userID,
-		WorkingDir: "/", // Default working directory
-		Timeout:    30 * time.Second,
-	}
-
-	// Set project path if identified
-	if projectInfo != nil {
-		execCtx.ProjectPath = projectInfo.Path
-		execCtx.WorkingDir = projectInfo.Path
-	}
+	// Create and set up execution context with project path if available
+	execCtx := s.setupExecutionContext(ctx, userID, projectInfo)
 
 	// Execute based on intent
 	switch intent {
@@ -247,6 +310,32 @@ func (s *Service) processUserQuery(ctx context.Context, query string, userID int
 	default:
 		return s.handleGeneralQuery(ctx, enhancedQuery, execCtx)
 	}
+}
+
+// setupExecutionContext creates and initializes an execution context with appropriate settings
+func (s *Service) setupExecutionContext(ctx context.Context, userID int64, project *Project) ExecutionContext {
+	execCtx := ExecutionContext{
+		UserID:      userID,
+		WorkingDir:  "/", // Default working directory
+		Timeout:     30 * time.Second,
+		Environment: make(map[string]string),
+	}
+
+	// Set project path if identified
+	if project != nil {
+		slog.InfoContext(ctx, "Setting execution context to project directory",
+			slog.String("project", project.Name),
+			slog.String("path", project.Path))
+
+		execCtx.ProjectPath = project.Path
+		execCtx.WorkingDir = project.Path
+
+		// Add project-specific environment variables if needed
+		execCtx.Environment["PROJECT_NAME"] = project.Name
+		execCtx.Environment["PROJECT_TYPE"] = string(project.Type)
+	}
+
+	return execCtx
 }
 
 // parseQuery analyzes the user query and determines intent
@@ -290,6 +379,14 @@ func (s *Service) identifyProjectFromQuery(ctx context.Context, query string) *P
 	if err != nil {
 		return nil
 	}
+
+	slog.DebugContext(ctx, "Identifying project from query",
+		slog.String("query", query),
+		slog.Int("project_count", len(index.Projects)),
+		slog.Int("shortcut_count", len(index.Shortcuts)),
+		slog.Any("projects", index.Projects),
+		slog.Any("shortcuts", index.Shortcuts),
+	)
 
 	// Check shortcuts first
 	for shortcut, projectName := range index.Shortcuts {
@@ -358,6 +455,11 @@ func (s *Service) handleFileOperation(ctx context.Context, query string, execCtx
 	// Enhance query with project context if available
 	if execCtx.ProjectPath != "" {
 		query = fmt.Sprintf("In project at %s: %s", execCtx.ProjectPath, query)
+		slog.InfoContext(ctx, "Executing file operation in project directory",
+			slog.String("project_path", execCtx.ProjectPath),
+			slog.String("working_dir", execCtx.WorkingDir))
+	} else {
+		slog.InfoContext(ctx, "Executing file operation with no specific project context")
 	}
 
 	return s.aiExecutor.ExecuteCommand(ctx, query, execCtx)
@@ -366,10 +468,33 @@ func (s *Service) handleFileOperation(ctx context.Context, query string, execCtx
 func (s *Service) handleGitOperation(ctx context.Context, query string, execCtx ExecutionContext) (*QueryResult, error) {
 	// Extract git command
 	gitCmd := strings.TrimPrefix(query, "git ")
+
+	// Log git operation details
+	if execCtx.ProjectPath != "" {
+		slog.InfoContext(ctx, "Executing git command in project directory",
+			slog.String("git_command", gitCmd),
+			slog.String("project_path", execCtx.ProjectPath),
+			slog.String("working_dir", execCtx.WorkingDir))
+	} else {
+		slog.InfoContext(ctx, "Executing git command with no specific project context",
+			slog.String("git_command", gitCmd))
+	}
+
 	return s.aiExecutor.ExecuteGitCommand(ctx, gitCmd, execCtx)
 }
 
 func (s *Service) handleGeneralQuery(ctx context.Context, query string, execCtx ExecutionContext) (*QueryResult, error) {
+	// Log general query execution details
+	if execCtx.ProjectPath != "" {
+		slog.InfoContext(ctx, "Executing general query in project directory",
+			slog.String("query", query),
+			slog.String("project_path", execCtx.ProjectPath),
+			slog.String("working_dir", execCtx.WorkingDir))
+	} else {
+		slog.InfoContext(ctx, "Executing general query with no specific project context",
+			slog.String("query", query))
+	}
+
 	return s.aiExecutor.ExecuteCommand(ctx, query, execCtx)
 }
 
@@ -465,4 +590,9 @@ func (s *Service) recordMetrics(ctx context.Context, cmd Command, startTime time
 			slog.String("command_id", cmd.ID),
 			slog.String("error", err.Error()))
 	}
+}
+
+// sendErrorToUser sends error message to user
+func (s *Service) sendErrorToUser(ctx context.Context, userID int64, message string) error {
+	return s.telegramNotifier.SendMessage(ctx, userID, fmt.Sprintf("❌ %s", message))
 }

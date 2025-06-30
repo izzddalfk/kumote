@@ -124,8 +124,10 @@ func setupLogger(logLevel string, isDevelopment bool) *slog.Logger {
 		// Use JSON handler for production (machine-readable)
 		handler = slog.NewJSONHandler(os.Stdout, opts)
 	}
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
 
-	return slog.New(handler)
+	return logger
 }
 
 // validateConfig validates the loaded configuration
@@ -229,6 +231,7 @@ func initializeDependencies(ctx context.Context, cfg *config.ServerConfig, logge
 		Shortcuts:      make(map[string]string),
 	}
 	indexPath := filepath.Join(dataPath, "projects-index.json")
+	slog.DebugContext(ctx, "Project scanner index path", slog.String("index_path", indexPath))
 	projectScanner := scanner.NewProjectScanner(scanConfig, indexPath, logger)
 	deps.ProjectScanner = projectScanner
 	logger.InfoContext(ctx, "Project scanner initialized successfully")
