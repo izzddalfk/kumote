@@ -104,35 +104,13 @@ func (s *Server) setupRoutes() {
 	s.router.Handle("/health", healthHandler)
 
 	// Telegram webhook endpoint
-	webhookHandler := handlers.NewTelegramWebhookHandler(
+	telegramHandler := handlers.NewTelegramWebhookHandler(
 		s.assistantService,
 		s.logger,
 		s.config.TelegramWebhookSecret,
 		s.config.AllowedUserIDs,
 	)
-	s.router.Handle("/telegram-webhook", webhookHandler)
-
-	// Project refresh endpoint (for manual triggering)
-	refreshHandler := handlers.NewProjectRefreshHandler(
-		s.assistantService,
-		s.logger,
-		s.config.AllowedUserIDs,
-	)
-	s.router.Handle("/refresh-projects", refreshHandler)
-
-	// Metrics endpoint (if enabled)
-	if s.config.EnableMetrics {
-		metricsHandler := handlers.NewMetricsHandler(
-			s.assistantService,
-			s.logger,
-		)
-		s.router.Handle("/metrics", metricsHandler)
-	}
-
-	// Profiling endpoints (if enabled and not in production)
-	if s.config.EnableProfiling && !s.config.IsProduction() {
-		s.setupProfilingRoutes()
-	}
+	s.router.Handle("/telegram", telegramHandler)
 
 	// Root endpoint with basic info
 	s.router.HandleFunc("/", s.handleRoot)
@@ -168,15 +146,6 @@ func (s *Server) buildMiddlewareStack() http.Handler {
 	return handler
 }
 
-// setupProfilingRoutes adds profiling endpoints
-func (s *Server) setupProfilingRoutes() {
-	// Note: In a real implementation, you'd import _ "net/http/pprof"
-	// and these routes would be automatically registered
-	s.logger.InfoContext(context.Background(), "Profiling endpoints enabled",
-		"endpoints", []string{"/debug/pprof/*"},
-	)
-}
-
 // handleRoot handles requests to the root endpoint
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
@@ -191,14 +160,8 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		"status":      "running",
 		"timestamp":   time.Now().Format(time.RFC3339),
 		"endpoints": map[string]string{
-			"health":           "/health",
-			"telegram_webhook": "/telegram-webhook",
-			"refresh_projects": "/refresh-projects",
+			"health": "/health",
 		},
-	}
-
-	if s.config.EnableMetrics {
-		info["endpoints"].(map[string]string)["metrics"] = "/metrics"
 	}
 
 	w.Header().Set("Content-Type", "application/json")

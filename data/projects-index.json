@@ -1,0 +1,16 @@
+{
+  "projects": [
+    {
+      "name": "remote-assistant",
+      "path": "/Users/mzk/Works/Personal/Development/kumote"
+    },
+    {
+      "name": "personal-website",
+      "path": "/Users/mzk/Works/Personal/Development/personal-website"
+    },
+    {
+      "name": "carlogbook",
+      "path": "/Users/mzk/Works/Personal/Development/mycar-logbook"
+    }
+  ]
+}
