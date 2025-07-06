@@ -19,8 +19,9 @@ type ServerConfig struct {
 	ShutdownTimeout time.Duration `json:"shutdown_timeout"`
 
 	// Telegram settings
-	TelegramBotToken      string `json:"-"` // Don't expose in JSON
-	TelegramWebhookSecret string `json:"-"` // Don't expose in JSON
+	TelegramBaseURL       string `cfg:"telegram_base_url" cfgDefault:"https://api.telegram.org"` // Base URL for Telegram API
+	TelegramBotToken      string `json:"-"`                                                      // Don't expose in JSON
+	TelegramWebhookSecret string `json:"-"`                                                      // Don't expose in JSON
 
 	// Security settings
 	AllowedUserIDs     []int64 `json:"allowed_user_ids"`
@@ -68,6 +69,7 @@ func LoadConfig() (*ServerConfig, error) {
 	}
 
 	// Telegram configuration
+	config.TelegramBaseURL = "https://api.telegram.org"
 	config.TelegramBotToken = os.Getenv("TELEGRAM_BOT_TOKEN")
 	config.TelegramWebhookSecret = os.Getenv("TELEGRAM_WEBHOOK_SECRET")
 

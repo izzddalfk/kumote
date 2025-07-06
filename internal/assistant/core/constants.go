@@ -87,14 +87,6 @@ var (
 	WebExtensions           = []string{".html", ".css", ".scss", ".sass", ".less"}
 )
 
-// Project indicators mapping to project types
-var ProjectIndicators = map[string]ProjectType{
-	GoModFile:           ProjectTypeGo,
-	PackageJSONFile:     ProjectTypeNodeJS,
-	RequirementsTxtFile: ProjectTypePython,
-	ReadmeFile:          ProjectTypeDocumentation,
-}
-
 // Technology stack detection patterns
 var TechStackPatterns = map[string][]string{
 	"go":         {"go.mod", "main.go", "*.go"},

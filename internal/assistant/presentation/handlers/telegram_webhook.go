@@ -41,31 +41,9 @@ type TelegramUpdate struct {
 			Username  string `json:"username,omitempty"`
 			Type      string `json:"type"`
 		} `json:"chat"`
-		Date  int64  `json:"date"`
-		Text  string `json:"text,omitempty"`
-		Voice struct {
-			FileID       string `json:"file_id"`
-			FileUniqueID string `json:"file_unique_id"`
-			Duration     int    `json:"duration"`
-			MimeType     string `json:"mime_type,omitempty"`
-			FileSize     int64  `json:"file_size,omitempty"`
-		} `json:"voice,omitempty"`
+		Date int64  `json:"date"`
+		Text string `json:"text,omitempty"`
 	} `json:"message,omitempty"`
-	CallbackQuery struct {
-		ID   string `json:"id"`
-		From struct {
-			ID        int64  `json:"id"`
-			FirstName string `json:"first_name"`
-			Username  string `json:"username,omitempty"`
-		} `json:"from"`
-		Message struct {
-			MessageID int64 `json:"message_id"`
-			Chat      struct {
-				ID int64 `json:"id"`
-			} `json:"chat"`
-		} `json:"message"`
-		Data string `json:"data"`
-	} `json:"callback_query,omitempty"`
 }
 
 // WebhookResponse represents response to Telegram webhook
@@ -145,14 +123,36 @@ func (h *TelegramWebhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Process the update
-	if err := h.processUpdate(ctx, &update); err != nil {
-		h.logger.ErrorContext(ctx, "Failed to process update",
+	// Check if this is a text message
+	if update.Message.Text == "" {
+		h.logger.InfoContext(ctx, "Received non-text message, ignoring",
+			"update_id", update.UpdateID,
+		)
+		h.sendSuccessResponse(w, "Non-text messages are not supported")
+		return
+	}
+
+	// Process the text message
+	result, err := h.processTextMessage(ctx, &update)
+	if err != nil {
+		h.logger.ErrorContext(ctx, "Failed to process text message",
 			"error", err,
 			"update_id", update.UpdateID,
 		)
-		// Still return success to Telegram to avoid retries
-		h.sendSuccessResponse(w, "Update processed with errors")
+		h.sendSuccessResponse(w, "Error processing message")
+		return
+	}
+
+	if result == nil || !result.Success {
+		errorMsg := "Unknown error"
+		if result != nil && result.Error != "" {
+			errorMsg = result.Error
+		}
+		h.logger.WarnContext(ctx, "Command processing failed",
+			"update_id", update.UpdateID,
+			"error", errorMsg,
+		)
+		h.sendSuccessResponse(w, fmt.Sprintf("Command processing failed: %s", errorMsg))
 		return
 	}
 
@@ -162,35 +162,11 @@ func (h *TelegramWebhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		"processing_time", time.Since(startTime),
 	)
 
-	h.sendSuccessResponse(w, "Update processed successfully")
-}
-
-// processUpdate processes incoming Telegram update
-func (h *TelegramWebhookHandler) processUpdate(ctx context.Context, update *TelegramUpdate) error {
-	// Handle text message
-	if update.Message.Text != "" {
-		return h.processTextMessage(ctx, update)
-	}
-
-	// Handle voice message
-	if update.Message.Voice.FileID != "" {
-		return h.processVoiceMessage(ctx, update)
-	}
-
-	// Handle callback query (inline keyboard responses)
-	if update.CallbackQuery.ID != "" {
-		return h.processCallbackQuery(ctx, update)
-	}
-
-	// Unknown update type
-	h.logger.WarnContext(ctx, "Received unknown update type",
-		"update_id", update.UpdateID,
-	)
-	return nil
+	h.sendSuccessResponse(w, result.Response)
 }
 
 // processTextMessage processes text messages
-func (h *TelegramWebhookHandler) processTextMessage(ctx context.Context, update *TelegramUpdate) error {
+func (h *TelegramWebhookHandler) processTextMessage(ctx context.Context, update *TelegramUpdate) (*core.QueryResult, error) {
 	userID := update.Message.From.ID
 
 	// Check if user is authorized
@@ -199,123 +175,49 @@ func (h *TelegramWebhookHandler) processTextMessage(ctx context.Context, update 
 			"user_id", userID,
 			"username", update.Message.From.Username,
 		)
-		return nil // Don't send error to unauthorized users
+		return &core.QueryResult{
+			Success: false,
+			Error:   "You are not authorized to use this assistant.",
+		}, nil
+	}
+
+	// Validate the message text
+	text := strings.TrimSpace(update.Message.Text)
+	if text == "" {
+		return &core.QueryResult{
+			Success: false,
+			Error:   "Empty message received.",
+		}, nil
 	}
 
 	// Create command from message
 	command := core.Command{
 		ID:        fmt.Sprintf("msg_%d_%d", update.Message.MessageID, time.Now().Unix()),
-		Text:      update.Message.Text,
+		Text:      text,
 		UserID:    userID,
 		Timestamp: time.Unix(update.Message.Date, 0),
 	}
 
 	// Process command
-	_, err := h.assistantService.ProcessCommand(ctx, command)
-	return err
-}
-
-// processVoiceMessage processes voice messages
-func (h *TelegramWebhookHandler) processVoiceMessage(ctx context.Context, update *TelegramUpdate) error {
-	userID := update.Message.From.ID
-
-	// Check if user is authorized
-	if !h.isUserAllowed(userID) {
-		return nil
+	result, err := h.assistantService.ProcessCommand(ctx, command)
+	if err != nil {
+		return &core.QueryResult{
+			Success: false,
+			Error:   fmt.Sprintf("Failed to process command: %v", err),
+		}, err
 	}
 
-	// Create command from voice message
-	command := core.Command{
-		ID:          fmt.Sprintf("voice_%d_%d", update.Message.MessageID, time.Now().Unix()),
-		UserID:      userID,
-		AudioFileID: update.Message.Voice.FileID,
-		Timestamp:   time.Unix(update.Message.Date, 0),
-	}
-
-	// Process audio command
-	_, err := h.assistantService.ProcessAudioCommand(ctx, command)
-	return err
-}
-
-// processCallbackQuery processes inline keyboard callbacks
-func (h *TelegramWebhookHandler) processCallbackQuery(ctx context.Context, update *TelegramUpdate) error {
-	userID := update.CallbackQuery.From.ID
-
-	// Check if user is authorized
-	if !h.isUserAllowed(userID) {
-		return nil
-	}
-
-	h.logger.InfoContext(ctx, "Processing callback query",
-		"user_id", userID,
-		"callback_data", update.CallbackQuery.Data,
-	)
-
-	// Handle different callback types
-	switch {
-	case strings.HasPrefix(update.CallbackQuery.Data, "project_"):
-		return h.handleProjectSelection(ctx, update)
-	case strings.HasPrefix(update.CallbackQuery.Data, "confirm_"):
-		return h.handleConfirmation(ctx, update)
-	default:
-		h.logger.WarnContext(ctx, "Unknown callback query data",
-			"data", update.CallbackQuery.Data,
-		)
-	}
-
-	return nil
-}
-
-// handleProjectSelection handles project selection from inline keyboard
-func (h *TelegramWebhookHandler) handleProjectSelection(ctx context.Context, update *TelegramUpdate) error {
-	// Extract project name from callback data
-	projectName := strings.TrimPrefix(update.CallbackQuery.Data, "project_")
-
-	// Create command to continue with selected project
-	command := core.Command{
-		ID:        fmt.Sprintf("callback_%s_%d", update.CallbackQuery.ID, time.Now().Unix()),
-		Text:      projectName, // The selected project name
-		UserID:    update.CallbackQuery.From.ID,
-		Timestamp: time.Now(),
-	}
-
-	_, err := h.assistantService.ProcessCommand(ctx, command)
-	return err
-}
-
-// handleConfirmation handles confirmation dialogs
-func (h *TelegramWebhookHandler) handleConfirmation(ctx context.Context, update *TelegramUpdate) error {
-	// Extract confirmation type and result
-	confirmData := strings.TrimPrefix(update.CallbackQuery.Data, "confirm_")
-	parts := strings.Split(confirmData, "_")
-
-	if len(parts) < 2 {
-		return fmt.Errorf("invalid confirmation data format")
-	}
-
-	confirmType := parts[0]
-	result := parts[1] // "yes" or "no"
-
-	h.logger.InfoContext(ctx, "Processing confirmation",
-		"type", confirmType,
-		"result", result,
-		"user_id", update.CallbackQuery.From.ID,
-	)
-
-	// Create command for confirmation result
-	command := core.Command{
-		ID:        fmt.Sprintf("confirm_%s_%d", update.CallbackQuery.ID, time.Now().Unix()),
-		Text:      fmt.Sprintf("confirmation:%s:%s", confirmType, result),
-		UserID:    update.CallbackQuery.From.ID,
-		Timestamp: time.Now(),
-	}
-
-	_, err := h.assistantService.ProcessCommand(ctx, command)
-	return err
+	return result, nil
 }
 
 // isUserAllowed checks if user is in the allowed list
 func (h *TelegramWebhookHandler) isUserAllowed(userID int64) bool {
+	if len(h.allowedUserIDs) == 0 {
+		// If no allowed users are configured, deny all requests
+		h.logger.Warn("No allowed users configured, denying all requests")
+		return false
+	}
+
 	for _, allowedID := range h.allowedUserIDs {
 		if allowedID == userID {
 			return true
@@ -346,7 +248,9 @@ func (h *TelegramWebhookHandler) sendSuccessResponse(w http.ResponseWriter, mess
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		h.logger.Error("Failed to encode response", "error", err)
+	}
 }
 
 // sendErrorResponse sends error response to Telegram
@@ -359,5 +263,7 @@ func (h *TelegramWebhookHandler) sendErrorResponse(w http.ResponseWriter, status
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		h.logger.Error("Failed to encode error response", "error", err)
+	}
 }
