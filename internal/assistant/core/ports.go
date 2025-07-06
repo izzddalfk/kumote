@@ -36,6 +36,10 @@ type UserRepository interface {
 	IsUserAllowed(ctx context.Context, userID int64) bool
 }
 
+type ProjectScanner interface {
+	GetProjectDirectory(query string) (string, error)
+}
+
 // CommandRepository defines interface for managing command history
 type CommandRepository interface {
 	// SaveCommand saves command to history

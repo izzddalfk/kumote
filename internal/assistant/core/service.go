@@ -15,6 +15,7 @@ type Service struct {
 	telegram         TelegramStorage
 	rateLimiter      RateLimiter
 	userRepo         UserRepository
+	projectScanner   ProjectScanner
 	commandRepo      CommandRepository
 	metricsCollector MetricsCollector
 }
@@ -24,6 +25,7 @@ type ServiceConfig struct {
 	Telegram         TelegramStorage   `validate:"nonnil"`
 	RateLimiter      RateLimiter       `validate:"nonnil"`
 	UserRepo         UserRepository    `validate:"nonnil"`
+	ProjectScanner   ProjectScanner    `validate:"nonnil"`
 	CommandRepo      CommandRepository `validate:"nonnil"`
 	MetricsCollector MetricsCollector  `validate:"nonnil"`
 }
@@ -38,6 +40,7 @@ func NewService(config ServiceConfig) (*Service, error) {
 		telegram:         config.Telegram,
 		rateLimiter:      config.RateLimiter,
 		userRepo:         config.UserRepo,
+		projectScanner:   config.ProjectScanner,
 		commandRepo:      config.CommandRepo,
 		metricsCollector: config.MetricsCollector,
 	}, nil
@@ -89,11 +92,27 @@ func (s *Service) ProcessCommand(ctx context.Context, cmd Command) (*QueryResult
 			slog.String("error", err.Error()))
 	}
 
+	// use project index scanner to determine the working directory
+	projectPath, err := s.projectScanner.GetProjectDirectory(cmd.Text)
+	if err != nil {
+		slog.ErrorContext(ctx, fmt.Sprintf("failed to get project directory: %s", err.Error()),
+			slog.String("query", cmd.Text),
+			slog.Int64("user_id", cmd.UserID))
+		// Just send to Telegram that the project folder not found and ignore the error
+		s.telegram.SendTextMessage(ctx, TelegramTextMessageInput{
+			ChatID:  cmd.UserID,
+			Message: "Project folder not found. Please add more specific project name in your query.",
+		})
+		return &QueryResult{
+			Success:  true,
+			Response: "Your request is being processed.",
+		}, nil
+	}
+
 	// Create execution context
-	// TODO: The project index scanner should be run here to determine the working directory
 	execCtx := ExecutionContext{
 		UserID:      cmd.UserID,
-		WorkingDir:  "/Users/mzk/Works/Personal/Development/personal-website", // Default working directory
+		WorkingDir:  projectPath,
 		Timeout:     600 * time.Second,
 		Environment: make(map[string]string),
 	}
@@ -107,10 +126,11 @@ func (s *Service) ProcessCommand(ctx context.Context, cmd Command) (*QueryResult
 
 	// Return early with a success response to the webhook
 	// Create a copy of the context that won't be canceled when the request completes
-	bgCtx := context.Background()
+	bgCtx, cancel := context.WithTimeout(context.Background(), execCtx.Timeout)
 
 	// Process the command to AI assistant asynchronously in a goroutine
 	go func() {
+		defer cancel()
 		// Process the command to AI assistant
 		result, err := s.aiExecutor.ExecuteCommand(bgCtx, cmd.Text, execCtx)
 		if err != nil {

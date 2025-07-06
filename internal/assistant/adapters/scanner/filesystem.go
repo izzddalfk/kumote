@@ -3,7 +3,7 @@ package scanner
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"regexp"
 	"strings"
@@ -86,7 +86,7 @@ func (s *FileSystemScanner) detectWord(targetWord, sentence string) bool {
 	// Extract words from sentence (including hyphenated words)
 	words := extractWords(sentence)
 
-	log.Printf("Extracted words %v\n", words)
+	slog.Debug("Extracted words", slog.Any("words", words))
 
 	// Check each word for similarity
 	for _, word := range words {

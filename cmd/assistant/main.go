@@ -13,6 +13,7 @@ import (
 	"github.com/knightazura/kumote/internal/assistant/adapters/commandrepository"
 	"github.com/knightazura/kumote/internal/assistant/adapters/metricscollector"
 	"github.com/knightazura/kumote/internal/assistant/adapters/ratelimiter"
+	"github.com/knightazura/kumote/internal/assistant/adapters/scanner"
 	"github.com/knightazura/kumote/internal/assistant/adapters/telegram"
 	"github.com/knightazura/kumote/internal/assistant/adapters/userrepository"
 	"github.com/knightazura/kumote/internal/assistant/core"
@@ -153,6 +154,15 @@ func initializeDependencies(cfg *config.ServerConfig, logger *slog.Logger) (*cor
 	}
 	aiExecutor := codecompletion.NewClaudeExecutor(claudeExecutable, "sonnet", cfg.DevelopmentPath, cfg.IsDevelopment())
 
+	// Initialize project scanner
+	projectScanner, err := scanner.NewFileSystemScanner(scanner.FileSystemScannerConfig{
+		ProjectIndexPath:       os.Getenv("PROJECT_INDEX_PATH"),
+		WordProximityThreshold: 0.5, // use lower threshold for less permissive matching
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize project scanner: %w", err)
+	}
+
 	// Initialize Telegram storage
 	telegramStorage, err := telegram.NewClient(telegram.ClientConfig{
 		BaseURL:  cfg.TelegramBaseURL,
@@ -165,6 +175,7 @@ func initializeDependencies(cfg *config.ServerConfig, logger *slog.Logger) (*cor
 	return &core.ServiceConfig{
 		AiExecutor:       aiExecutor,
 		Telegram:         telegramStorage,
+		ProjectScanner:   projectScanner,
 		CommandRepo:      commandRepo,
 		MetricsCollector: metricsCollector,
 		UserRepo:         userrepository.NewUserRepository(logger),
