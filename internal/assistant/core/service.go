@@ -11,7 +11,7 @@ import (
 
 // Service implements the AssistantService interface
 type Service struct {
-	aiExecutor       AICodeExecutor
+	aiExecutor       AIAgent
 	telegram         TelegramStorage
 	rateLimiter      RateLimiter
 	userRepo         UserRepository
@@ -21,7 +21,7 @@ type Service struct {
 }
 
 type ServiceConfig struct {
-	AiExecutor       AICodeExecutor    `validate:"nonnil"`
+	AiExecutor       AIAgent           `validate:"nonnil"`
 	Telegram         TelegramStorage   `validate:"nonnil"`
 	RateLimiter      RateLimiter       `validate:"nonnil"`
 	UserRepo         UserRepository    `validate:"nonnil"`
@@ -132,7 +132,11 @@ func (s *Service) ProcessCommand(ctx context.Context, cmd Command) (*QueryResult
 	go func() {
 		defer cancel()
 		// Process the command to AI assistant
-		result, err := s.aiExecutor.ExecuteCommand(bgCtx, cmd.Text, execCtx)
+		result, err := s.aiExecutor.ExecuteCommand(bgCtx, AgentCommandInput{
+			Prompt:           cmd.Text,
+			ExecutionContext: execCtx,
+			SessionID:        cmd.SessionID, // Pass session ID if available
+		})
 		if err != nil {
 			slog.ErrorContext(bgCtx, "Failed to process command asynchronously",
 				slog.String("command_id", cmd.ID),

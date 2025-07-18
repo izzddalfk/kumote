@@ -72,7 +72,7 @@ func main() {
 
 // Dependencies holds all initialized dependencies
 type Dependencies struct {
-	AICodeExecutor    core.AICodeExecutor
+	AICodeExecutor    core.AIAgent
 	UserRepository    core.UserRepository
 	CommandRepository core.CommandRepository
 	MetricsCollector  core.MetricsCollector

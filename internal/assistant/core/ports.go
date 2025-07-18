@@ -14,10 +14,10 @@ type AssistantService interface {
 
 // Secondary Ports (SPIs that are driven by our application)
 
-// AICodeExecutor defines interface for interacting with AI-powered code execution tools
-type AICodeExecutor interface {
+// AIAgent defines interface for interacting with AI-powered code execution tools
+type AIAgent interface {
 	// ExecuteCommand runs an AI code command and returns the result
-	ExecuteCommand(ctx context.Context, command string, execCtx ExecutionContext) (*QueryResult, error)
+	ExecuteCommand(ctx context.Context, input AgentCommandInput) (*QueryResult, error)
 
 	// IsAvailable checks if AI code executor is available and working
 	IsAvailable(ctx context.Context) bool

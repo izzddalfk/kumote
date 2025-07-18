@@ -47,9 +47,9 @@ type claudeCodeResponse struct {
 }
 
 // ExecuteCommand runs an AI code command and returns the result
-func (c *ClaudeExecutor) ExecuteCommand(ctx context.Context, command string, execCtx core.ExecutionContext) (*core.QueryResult, error) {
+func (c *ClaudeExecutor) ExecuteCommand(ctx context.Context, input core.AgentCommandInput) (*core.QueryResult, error) {
 	// Execute Claude CLI command
-	rawOutput, err := c.runClaudeCommand(ctx, command, execCtx.WorkingDir)
+	rawOutput, err := c.runClaudeCommand(ctx, input.Prompt, input.ExecutionContext.WorkingDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute command with Claude: %w", err)
 	}
