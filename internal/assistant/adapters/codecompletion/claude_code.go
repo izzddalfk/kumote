@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
 	"os/exec"
 	"strings"
@@ -49,9 +48,9 @@ type claudeCodeResponse struct {
 // ExecuteCommand runs an AI code command and returns the result
 func (c *ClaudeExecutor) ExecuteCommand(ctx context.Context, input core.AgentCommandInput) (*core.QueryResult, error) {
 	// Execute Claude CLI command
-	rawOutput, err := c.runClaudeCommand(ctx, input.Prompt, input.ExecutionContext.WorkingDir)
+	rawOutput, err := c.runClaudeCommand(ctx, input)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute command with Claude: %w", err)
+		return nil, err
 	}
 
 	// Parse JSON response
@@ -79,31 +78,34 @@ func (c *ClaudeExecutor) IsAvailable(ctx context.Context) bool {
 }
 
 // runClaudeCommand executes the Claude CLI with the given prompt
-func (c *ClaudeExecutor) runClaudeCommand(ctx context.Context, prompt, workingDir string, args ...string) (string, error) {
+func (c *ClaudeExecutor) runClaudeCommand(ctx context.Context, input core.AgentCommandInput, args ...string) (string, error) {
 	// Construct the command
 	cmdArgs := []string{
 		"--model", c.defaultModel,
 		"--output-format", "json",
 	}
+	// If the session ID is provided, add it to the command
+	if input.SessionID != nil {
+		cmdArgs = append(cmdArgs, "--resume", *input.SessionID)
+	}
 	cmdArgs = append(cmdArgs, args...)
 
 	// always add the prompt as the last argument
-	cmdArgs = append(cmdArgs, "-p", prompt)
+	cmdArgs = append(cmdArgs, "-p", input.Prompt)
 
 	// Create the command
 	cmd := exec.CommandContext(ctx, c.executablePath, cmdArgs...)
 
 	// Set working directory if specified
-	cmd.Dir = workingDir
+	cmd.Dir = input.ExecutionContext.WorkingDir
 
 	// Set the prompt as input
-	cmd.Stdin = strings.NewReader(prompt)
+	cmd.Stdin = strings.NewReader(input.Prompt)
 
 	// Capture output
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Default().Println("Claude CLI error:", err, "output:", string(output))
-		return "", fmt.Errorf("claude CLI error: %w", err)
+		return "", fmt.Errorf("failed to execute claude command: %w", err)
 	}
 
 	return string(output), nil
