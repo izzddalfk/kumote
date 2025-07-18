@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/knightazura/kumote/internal/assistant/core"
+	"github.com/izzddalfk/kumote/internal/assistant/core"
 	"gopkg.in/validator.v2"
 )
 

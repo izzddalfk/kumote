@@ -9,16 +9,16 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/knightazura/kumote/internal/assistant/adapters/codecompletion"
-	"github.com/knightazura/kumote/internal/assistant/adapters/commandrepository"
-	"github.com/knightazura/kumote/internal/assistant/adapters/metricscollector"
-	"github.com/knightazura/kumote/internal/assistant/adapters/ratelimiter"
-	"github.com/knightazura/kumote/internal/assistant/adapters/scanner"
-	"github.com/knightazura/kumote/internal/assistant/adapters/telegram"
-	"github.com/knightazura/kumote/internal/assistant/adapters/userrepository"
-	"github.com/knightazura/kumote/internal/assistant/core"
-	"github.com/knightazura/kumote/internal/assistant/presentation/config"
-	"github.com/knightazura/kumote/internal/assistant/presentation/server"
+	"github.com/izzddalfk/kumote/internal/assistant/adapters/codecompletion"
+	"github.com/izzddalfk/kumote/internal/assistant/adapters/commandrepository"
+	"github.com/izzddalfk/kumote/internal/assistant/adapters/metricscollector"
+	"github.com/izzddalfk/kumote/internal/assistant/adapters/ratelimiter"
+	"github.com/izzddalfk/kumote/internal/assistant/adapters/scanner"
+	"github.com/izzddalfk/kumote/internal/assistant/adapters/telegram"
+	"github.com/izzddalfk/kumote/internal/assistant/adapters/userrepository"
+	"github.com/izzddalfk/kumote/internal/assistant/core"
+	"github.com/izzddalfk/kumote/internal/assistant/presentation/config"
+	"github.com/izzddalfk/kumote/internal/assistant/presentation/server"
 )
 
 func main() {

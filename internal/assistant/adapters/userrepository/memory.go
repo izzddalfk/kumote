@@ -1,13 +1,13 @@
 package userrepository
 
 import (
-"context"
-"log/slog"
-"os"
-"strconv"
-"strings"
+	"context"
+	"log/slog"
+	"os"
+	"strconv"
+	"strings"
 
-"github.com/knightazura/kumote/internal/assistant/core"
+	"github.com/izzddalfk/kumote/internal/assistant/core"
 )
 
 type UserRepository struct {
@@ -39,10 +39,10 @@ func (r *UserRepository) GetUser(ctx context.Context, userID int64) (*core.User,
 	}
 
 	// If user doesn't exist but is allowed, create a basic user entry
-if r.IsUserAllowed(ctx, userID) {
-user := &core.User{
-ID:        userID,
-FirstName: "Remote User", // Default name since we don't have Telegram user info
+	if r.IsUserAllowed(ctx, userID) {
+		user := &core.User{
+			ID:        userID,
+			FirstName: "Remote User", // Default name since we don't have Telegram user info
 			IsAllowed: true,
 		}
 		r.users[userID] = user
@@ -58,9 +58,9 @@ func (r *UserRepository) IsUserAllowed(ctx context.Context, userID int64) bool {
 	allowed := r.allowedUserIDs[userID]
 
 	r.logger.DebugContext(ctx, "Checking user authorization",
-"user_id", userID,
-"allowed", allowed,
-)
+		"user_id", userID,
+		"allowed", allowed,
+	)
 
 	return allowed
 }

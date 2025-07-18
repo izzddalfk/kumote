@@ -1,13 +1,13 @@
 package metricscollector
 
 import (
-"context"
-"database/sql"
-"fmt"
-"log/slog"
+	"context"
+	"database/sql"
+	"fmt"
+	"log/slog"
 
-"github.com/knightazura/kumote/internal/assistant/core"
-_ "github.com/mattn/go-sqlite3"
+	"github.com/izzddalfk/kumote/internal/assistant/core"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type MetricsCollector struct {
@@ -47,9 +47,9 @@ func (mc *MetricsCollector) Close() error {
 // RecordCommandExecution records metrics for command execution
 func (mc *MetricsCollector) RecordCommandExecution(ctx context.Context, metrics core.CommandMetrics) error {
 	mc.logger.DebugContext(ctx, "Recording command execution metrics",
-"command_id", metrics.CommandID,
-"user_id", metrics.UserID,
-"execution_time_ms", metrics.ExecutionTime.Milliseconds(),
+		"command_id", metrics.CommandID,
+		"user_id", metrics.UserID,
+		"execution_time_ms", metrics.ExecutionTime.Milliseconds(),
 		"success", metrics.Success,
 	)
 
@@ -61,9 +61,9 @@ project_used, error_type, timestamp
 	`
 
 	_, err := mc.db.ExecContext(ctx, query,
-metrics.CommandID,
-metrics.UserID,
-metrics.ExecutionTime.Milliseconds(),
+		metrics.CommandID,
+		metrics.UserID,
+		metrics.ExecutionTime.Milliseconds(),
 		metrics.Success,
 		metrics.ProjectUsed,
 		metrics.ErrorType,
@@ -72,15 +72,15 @@ metrics.ExecutionTime.Milliseconds(),
 
 	if err != nil {
 		mc.logger.ErrorContext(ctx, "Failed to record command metrics",
-"command_id", metrics.CommandID,
-"error", err.Error(),
+			"command_id", metrics.CommandID,
+			"error", err.Error(),
 		)
 		return fmt.Errorf("failed to record command metrics: %w", err)
 	}
 
 	mc.logger.DebugContext(ctx, "Command metrics recorded successfully",
-"command_id", metrics.CommandID,
-)
+		"command_id", metrics.CommandID,
+	)
 
 	return nil
 }

@@ -1,12 +1,12 @@
 package ratelimiter
 
 import (
-"context"
-"log/slog"
-"sync"
-"time"
+	"context"
+	"log/slog"
+	"sync"
+	"time"
 
-"github.com/knightazura/kumote/internal/assistant/core"
+	"github.com/izzddalfk/kumote/internal/assistant/core"
 )
 
 // RateLimiter implements token bucket rate limiting
@@ -78,17 +78,17 @@ func (rl *RateLimiter) IsAllowed(ctx context.Context, userID int64) bool {
 	allowed := bucket.tokens > 0
 
 	rl.logger.DebugContext(ctx, "Rate limit check",
-"user_id", userID,
-"tokens_available", bucket.tokens,
-"allowed", allowed,
-)
+		"user_id", userID,
+		"tokens_available", bucket.tokens,
+		"allowed", allowed,
+	)
 
 	if !allowed {
 		bucket.blockedCount++
 		rl.logger.WarnContext(ctx, "Rate limit exceeded",
-"user_id", userID,
-"blocked_count", bucket.blockedCount,
-)
+			"user_id", userID,
+			"blocked_count", bucket.blockedCount,
+		)
 	}
 
 	return allowed
@@ -107,9 +107,9 @@ func (rl *RateLimiter) RecordRequest(ctx context.Context, userID int64) error {
 	if bucket.tokens <= 0 {
 		bucket.blockedCount++
 		rl.logger.WarnContext(ctx, "Request blocked by rate limiter",
-"user_id", userID,
-"blocked_count", bucket.blockedCount,
-)
+			"user_id", userID,
+			"blocked_count", bucket.blockedCount,
+		)
 		return core.ErrRateLimitExceeded
 	}
 
@@ -118,10 +118,10 @@ func (rl *RateLimiter) RecordRequest(ctx context.Context, userID int64) error {
 	bucket.requestCount++
 
 	rl.logger.DebugContext(ctx, "Request recorded",
-"user_id", userID,
-"tokens_remaining", bucket.tokens,
-"total_requests", bucket.requestCount,
-)
+		"user_id", userID,
+		"tokens_remaining", bucket.tokens,
+		"total_requests", bucket.requestCount,
+	)
 
 	return nil
 }

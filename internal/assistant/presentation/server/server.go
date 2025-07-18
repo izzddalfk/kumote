@@ -11,10 +11,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/knightazura/kumote/internal/assistant/core"
-	"github.com/knightazura/kumote/internal/assistant/presentation/config"
-	"github.com/knightazura/kumote/internal/assistant/presentation/handlers"
-	"github.com/knightazura/kumote/internal/assistant/presentation/middleware"
+	"github.com/izzddalfk/kumote/internal/assistant/core"
+	"github.com/izzddalfk/kumote/internal/assistant/presentation/config"
+	"github.com/izzddalfk/kumote/internal/assistant/presentation/handlers"
+	"github.com/izzddalfk/kumote/internal/assistant/presentation/middleware"
 )
 
 // Server represents the HTTP server

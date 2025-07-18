@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/knightazura/kumote/internal/shared/utils/wordsimilarity"
+	"github.com/izzddalfk/kumote/internal/shared/utils/wordsimilarity"
 	"github.com/stretchr/testify/assert"
 )
 

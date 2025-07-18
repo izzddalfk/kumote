@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/knightazura/kumote/internal/assistant/core"
+	"github.com/izzddalfk/kumote/internal/assistant/core"
 )
 
 // MetricsHandler handles metrics collection and reporting

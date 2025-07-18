@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/knightazura/kumote/internal/assistant/core"
+	"github.com/izzddalfk/kumote/internal/assistant/core"
 	_ "github.com/mattn/go-sqlite3"
 )
 

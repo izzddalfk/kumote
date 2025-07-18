@@ -1,4 +1,4 @@
-module github.com/knightazura/kumote
+module github.com/izzddalfk/kumote
 
 go 1.24.1
 

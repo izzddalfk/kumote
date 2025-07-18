@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/knightazura/kumote/internal/assistant/adapters/scanner"
+	"github.com/izzddalfk/kumote/internal/assistant/adapters/scanner"
 	"github.com/stretchr/testify/assert"
 )
 

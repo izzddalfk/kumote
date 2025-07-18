@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/knightazura/kumote/internal/assistant/core"
+	"github.com/izzddalfk/kumote/internal/assistant/core"
 )
 
 // TelegramWebhookHandler handles incoming Telegram webhook requests
