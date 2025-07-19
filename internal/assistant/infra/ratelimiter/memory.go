@@ -13,7 +13,6 @@ import (
 type RateLimiter struct {
 	buckets map[int64]*tokenBucket
 	mutex   sync.RWMutex
-	logger  *slog.Logger
 	config  RateLimitConfig
 }
 
@@ -37,7 +36,7 @@ type tokenBucket struct {
 }
 
 // NewRateLimiter creates a new rate limiter
-func NewRateLimiter(requestsPerMinute int, logger *slog.Logger) *RateLimiter {
+func NewRateLimiter(requestsPerMinute int) *RateLimiter {
 	config := RateLimitConfig{
 		RequestsPerMinute: requestsPerMinute,
 		BurstSize:         requestsPerMinute / 2, // Allow burst of half the rate
@@ -52,17 +51,11 @@ func NewRateLimiter(requestsPerMinute int, logger *slog.Logger) *RateLimiter {
 
 	rl := &RateLimiter{
 		buckets: make(map[int64]*tokenBucket),
-		logger:  logger,
 		config:  config,
 	}
 
 	// Start cleanup goroutine
 	go rl.cleanupRoutine()
-
-	logger.InfoContext(context.Background(), "Rate limiter initialized",
-		"requests_per_minute", requestsPerMinute,
-		"burst_size", config.BurstSize,
-	)
 
 	return rl
 }
@@ -77,7 +70,7 @@ func (rl *RateLimiter) IsAllowed(ctx context.Context, userID int64) bool {
 
 	allowed := bucket.tokens > 0
 
-	rl.logger.DebugContext(ctx, "Rate limit check",
+	slog.DebugContext(ctx, "Rate limit check",
 		"user_id", userID,
 		"tokens_available", bucket.tokens,
 		"allowed", allowed,
@@ -85,7 +78,7 @@ func (rl *RateLimiter) IsAllowed(ctx context.Context, userID int64) bool {
 
 	if !allowed {
 		bucket.blockedCount++
-		rl.logger.WarnContext(ctx, "Rate limit exceeded",
+		slog.WarnContext(ctx, "Rate limit exceeded",
 			"user_id", userID,
 			"blocked_count", bucket.blockedCount,
 		)
@@ -106,7 +99,7 @@ func (rl *RateLimiter) RecordRequest(ctx context.Context, userID int64) error {
 
 	if bucket.tokens <= 0 {
 		bucket.blockedCount++
-		rl.logger.WarnContext(ctx, "Request blocked by rate limiter",
+		slog.WarnContext(ctx, "Request blocked by rate limiter",
 			"user_id", userID,
 			"blocked_count", bucket.blockedCount,
 		)
@@ -117,7 +110,7 @@ func (rl *RateLimiter) RecordRequest(ctx context.Context, userID int64) error {
 	bucket.tokens--
 	bucket.requestCount++
 
-	rl.logger.DebugContext(ctx, "Request recorded",
+	slog.DebugContext(ctx, "Request recorded",
 		"user_id", userID,
 		"tokens_remaining", bucket.tokens,
 		"total_requests", bucket.requestCount,

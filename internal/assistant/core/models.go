@@ -20,6 +20,7 @@ type Command struct {
 	Text        string     `json:"text"`
 	Timestamp   time.Time  `json:"timestamp"`
 	ProcessedAt *time.Time `json:"processed_at,omitempty"`
+	SessionID   *string    `json:"session_id,omitempty"` // Optional session ID for stateful interactions. Only supported by Claude Code.
 }
 
 // QueryResult represents the result of processing a user query
@@ -52,4 +53,10 @@ type CommandMetrics struct {
 type TelegramTextMessageInput struct {
 	ChatID  int64
 	Message string
+}
+
+type AgentCommandInput struct {
+	Prompt           string
+	ExecutionContext ExecutionContext
+	SessionID        *string // Optional session ID for stateful interactions. Only supported by Claude Code.
 }

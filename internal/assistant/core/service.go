@@ -11,23 +11,21 @@ import (
 
 // Service implements the AssistantService interface
 type Service struct {
-	aiExecutor       AICodeExecutor
+	agent            Agent
 	telegram         TelegramStorage
 	rateLimiter      RateLimiter
 	userRepo         UserRepository
 	projectScanner   ProjectScanner
-	commandRepo      CommandRepository
 	metricsCollector MetricsCollector
 }
 
 type ServiceConfig struct {
-	AiExecutor       AICodeExecutor    `validate:"nonnil"`
-	Telegram         TelegramStorage   `validate:"nonnil"`
-	RateLimiter      RateLimiter       `validate:"nonnil"`
-	UserRepo         UserRepository    `validate:"nonnil"`
-	ProjectScanner   ProjectScanner    `validate:"nonnil"`
-	CommandRepo      CommandRepository `validate:"nonnil"`
-	MetricsCollector MetricsCollector  `validate:"nonnil"`
+	Agent            Agent            `validate:"nonnil"`
+	Telegram         TelegramStorage  `validate:"nonnil"`
+	RateLimiter      RateLimiter      `validate:"nonnil"`
+	UserRepo         UserRepository   `validate:"nonnil"`
+	ProjectScanner   ProjectScanner   `validate:"nonnil"`
+	MetricsCollector MetricsCollector `validate:"nonnil"`
 }
 
 // NewService creates a new assistant service with all dependencies
@@ -36,12 +34,11 @@ func NewService(config ServiceConfig) (*Service, error) {
 		return nil, fmt.Errorf("invalid service configuration: %w", err)
 	}
 	return &Service{
-		aiExecutor:       config.AiExecutor,
+		agent:            config.Agent,
 		telegram:         config.Telegram,
 		rateLimiter:      config.RateLimiter,
 		userRepo:         config.UserRepo,
 		projectScanner:   config.ProjectScanner,
-		commandRepo:      config.CommandRepo,
 		metricsCollector: config.MetricsCollector,
 	}, nil
 }
@@ -85,13 +82,6 @@ func (s *Service) ProcessCommand(ctx context.Context, cmd Command) (*QueryResult
 		return result, nil
 	}
 
-	// Save command to history
-	if err := s.commandRepo.SaveCommand(ctx, &cmd); err != nil {
-		slog.WarnContext(ctx, "Failed to save command",
-			slog.String("command_id", cmd.ID),
-			slog.String("error", err.Error()))
-	}
-
 	// use project index scanner to determine the working directory
 	projectPath, err := s.projectScanner.GetProjectDirectory(cmd.Text)
 	if err != nil {
@@ -132,7 +122,11 @@ func (s *Service) ProcessCommand(ctx context.Context, cmd Command) (*QueryResult
 	go func() {
 		defer cancel()
 		// Process the command to AI assistant
-		result, err := s.aiExecutor.ExecuteCommand(bgCtx, cmd.Text, execCtx)
+		result, err := s.agent.ExecuteCommand(bgCtx, AgentCommandInput{
+			Prompt:           cmd.Text,
+			ExecutionContext: execCtx,
+			SessionID:        cmd.SessionID, // Pass session ID if available
+		})
 		if err != nil {
 			slog.ErrorContext(bgCtx, "Failed to process command asynchronously",
 				slog.String("command_id", cmd.ID),
