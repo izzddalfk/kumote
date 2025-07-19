@@ -9,32 +9,36 @@ import (
 	"strings"
 
 	"github.com/izzddalfk/kumote/internal/assistant/core"
+	"gopkg.in/validator.v2"
 )
 
-// ClaudeExecutor implements the AICodeExecutor interface using Claude CLI
-type ClaudeExecutor struct {
+// ClaudeCodeAgent implements the AICodeExecutor interface using Claude CLI
+type ClaudeCodeAgent struct {
 	executablePath string
 	defaultModel   string
 	baseWorkDir    string
 	debug          bool
 }
 
+type ClaudeCodeAgentConfig struct {
+	ExecutablePath string `validate:"nonzero"`
+	DefaultModel   string `validate:"nonzero"`
+	BaseWorkDir    string `validate:"nonzero"`
+	Debug          bool
+}
+
 // NewClaudeExecutor creates a new instance of ClaudeExecutor
-func NewClaudeExecutor(executablePath, defaultModel, baseWorkDir string, debug bool) *ClaudeExecutor {
-	if executablePath == "" {
-		executablePath = "claude" // Default to "claude" if not specified
+func NewClaudeExecutor(config ClaudeCodeAgentConfig) (*ClaudeCodeAgent, error) {
+	if err := validator.Validate(config); err != nil {
+		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
-	if defaultModel == "" {
-		defaultModel = "sonnet" // Default to "sonnet" if not specified
-	}
-
-	return &ClaudeExecutor{
-		executablePath: executablePath,
-		defaultModel:   defaultModel,
-		baseWorkDir:    baseWorkDir,
-		debug:          debug,
-	}
+	return &ClaudeCodeAgent{
+		executablePath: config.ExecutablePath,
+		defaultModel:   config.DefaultModel,
+		baseWorkDir:    config.BaseWorkDir,
+		debug:          config.Debug,
+	}, nil
 }
 
 type claudeCodeResponse struct {
@@ -46,7 +50,7 @@ type claudeCodeResponse struct {
 }
 
 // ExecuteCommand runs an AI code command and returns the result
-func (c *ClaudeExecutor) ExecuteCommand(ctx context.Context, input core.AgentCommandInput) (*core.QueryResult, error) {
+func (c *ClaudeCodeAgent) ExecuteCommand(ctx context.Context, input core.AgentCommandInput) (*core.QueryResult, error) {
 	// Execute Claude CLI command
 	rawOutput, err := c.runClaudeCommand(ctx, input)
 	if err != nil {
@@ -71,14 +75,14 @@ func (c *ClaudeExecutor) ExecuteCommand(ctx context.Context, input core.AgentCom
 }
 
 // IsAvailable checks if Claude CLI is available
-func (c *ClaudeExecutor) IsAvailable(ctx context.Context) bool {
+func (c *ClaudeCodeAgent) IsAvailable(ctx context.Context) bool {
 	cmd := exec.CommandContext(ctx, c.executablePath, "--version")
 	err := cmd.Run()
 	return err == nil
 }
 
 // runClaudeCommand executes the Claude CLI with the given prompt
-func (c *ClaudeExecutor) runClaudeCommand(ctx context.Context, input core.AgentCommandInput, args ...string) (string, error) {
+func (c *ClaudeCodeAgent) runClaudeCommand(ctx context.Context, input core.AgentCommandInput, args ...string) (string, error) {
 	// Construct the command
 	cmdArgs := []string{
 		"--model", c.defaultModel,
