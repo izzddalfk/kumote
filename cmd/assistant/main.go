@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/izzddalfk/kumote/internal/assistant/adapters/codecompletion"
+	"github.com/izzddalfk/kumote/internal/assistant/adapters/agents"
 	"github.com/izzddalfk/kumote/internal/assistant/adapters/metricscollector"
 	"github.com/izzddalfk/kumote/internal/assistant/adapters/ratelimiter"
 	"github.com/izzddalfk/kumote/internal/assistant/adapters/scanner"
@@ -118,7 +118,7 @@ func initializeDependencies(cfg *config.Configs) (*core.ServiceConfig, error) {
 	}
 
 	// Initialize AI Agent
-	aiExecutor, err := codecompletion.NewClaudeCodeAgent(codecompletion.ClaudeCodeAgentConfig{
+	aiExecutor, err := agents.NewClaudeCodeAgent(agents.ClaudeCodeAgentConfig{
 		ExecutablePath: cfg.ApplicationConfig.ClaudeCodePath,
 		DefaultModel:   "sonnet",
 		BaseWorkDir:    cfg.ApplicationConfig.ProjectsPath,

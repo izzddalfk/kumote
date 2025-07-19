@@ -1,4 +1,4 @@
-package codecompletion
+package agents
 
 import (
 	"context"
