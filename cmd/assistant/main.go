@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/izzddalfk/kumote/internal/assistant/adapters/codecompletion"
 	"github.com/izzddalfk/kumote/internal/assistant/adapters/commandrepository"
@@ -53,16 +54,24 @@ func main() {
 	}
 
 	// Create and start HTTP server
-	httpServer := rest.NewServer(cfg, logger, assistantService)
+	httpServer, err := rest.NewServer(rest.ServerConfig{
+		AssistantService: assistantService,
+		Port:             ":3000",
+		ReadTimeout:      time.Second * 5,
+		WriteTimeout:     time.Second * 30,
+	})
+	if err != nil {
+		log.Fatalf("failed to create HTTP server: %v", err)
+	}
 
-	logger.InfoContext(ctx, "Starting Remote Work Telegram Assistant",
+	logger.InfoContext(ctx, "Kumote started",
 		"version", cfg.Version,
 		"environment", cfg.Environment,
 		"port", cfg.Port,
 	)
 
 	// Start server (this blocks until shutdown)
-	if err := httpServer.Start(ctx); err != nil {
+	if err := httpServer.Start(); err != nil {
 		logger.ErrorContext(ctx, "Server error", "error", err)
 		os.Exit(1)
 	}
