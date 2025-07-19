@@ -70,7 +70,7 @@ func main() {
 
 // Dependencies holds all initialized dependencies
 type Dependencies struct {
-	AICodeExecutor   core.AIAgent
+	AICodeExecutor   core.Agent
 	UserRepository   core.UserRepository
 	MetricsCollector core.MetricsCollector
 	RateLimiter      core.RateLimiter
@@ -155,7 +155,7 @@ func initializeDependencies(cfg *config.Configs) (*core.ServiceConfig, error) {
 	}
 
 	return &core.ServiceConfig{
-		AiExecutor:       aiExecutor,
+		Agent:            aiExecutor,
 		Telegram:         telegramStorage,
 		ProjectScanner:   projectScanner,
 		MetricsCollector: metricsCollector,

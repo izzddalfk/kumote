@@ -11,7 +11,7 @@ import (
 
 // Service implements the AssistantService interface
 type Service struct {
-	aiExecutor       AIAgent
+	agent            Agent
 	telegram         TelegramStorage
 	rateLimiter      RateLimiter
 	userRepo         UserRepository
@@ -20,7 +20,7 @@ type Service struct {
 }
 
 type ServiceConfig struct {
-	AiExecutor       AIAgent          `validate:"nonnil"`
+	Agent            Agent            `validate:"nonnil"`
 	Telegram         TelegramStorage  `validate:"nonnil"`
 	RateLimiter      RateLimiter      `validate:"nonnil"`
 	UserRepo         UserRepository   `validate:"nonnil"`
@@ -34,7 +34,7 @@ func NewService(config ServiceConfig) (*Service, error) {
 		return nil, fmt.Errorf("invalid service configuration: %w", err)
 	}
 	return &Service{
-		aiExecutor:       config.AiExecutor,
+		agent:            config.Agent,
 		telegram:         config.Telegram,
 		rateLimiter:      config.RateLimiter,
 		userRepo:         config.UserRepo,
@@ -122,7 +122,7 @@ func (s *Service) ProcessCommand(ctx context.Context, cmd Command) (*QueryResult
 	go func() {
 		defer cancel()
 		// Process the command to AI assistant
-		result, err := s.aiExecutor.ExecuteCommand(bgCtx, AgentCommandInput{
+		result, err := s.agent.ExecuteCommand(bgCtx, AgentCommandInput{
 			Prompt:           cmd.Text,
 			ExecutionContext: execCtx,
 			SessionID:        cmd.SessionID, // Pass session ID if available
