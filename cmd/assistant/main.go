@@ -10,14 +10,14 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/izzddalfk/kumote/internal/assistant/adapters/agents"
-	"github.com/izzddalfk/kumote/internal/assistant/adapters/metricscollector"
-	"github.com/izzddalfk/kumote/internal/assistant/adapters/ratelimiter"
-	"github.com/izzddalfk/kumote/internal/assistant/adapters/scanner"
-	"github.com/izzddalfk/kumote/internal/assistant/adapters/telegram"
-	"github.com/izzddalfk/kumote/internal/assistant/adapters/userrepository"
 	"github.com/izzddalfk/kumote/internal/assistant/config"
 	"github.com/izzddalfk/kumote/internal/assistant/core"
+	"github.com/izzddalfk/kumote/internal/assistant/infra/agents"
+	"github.com/izzddalfk/kumote/internal/assistant/infra/metricscollector"
+	"github.com/izzddalfk/kumote/internal/assistant/infra/ratelimiter"
+	"github.com/izzddalfk/kumote/internal/assistant/infra/scanner"
+	"github.com/izzddalfk/kumote/internal/assistant/infra/telegram"
+	"github.com/izzddalfk/kumote/internal/assistant/infra/userrepository"
 	"github.com/izzddalfk/kumote/internal/assistant/presentation/rest"
 )
 
