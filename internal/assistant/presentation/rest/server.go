@@ -1,4 +1,4 @@
-package server
+package rest
 
 import (
 	"context"
@@ -11,10 +11,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/izzddalfk/kumote/internal/assistant/config"
 	"github.com/izzddalfk/kumote/internal/assistant/core"
-	"github.com/izzddalfk/kumote/internal/assistant/presentation/config"
-	"github.com/izzddalfk/kumote/internal/assistant/presentation/handlers"
-	"github.com/izzddalfk/kumote/internal/assistant/presentation/middleware"
+	"github.com/izzddalfk/kumote/internal/assistant/presentation/rest/handlers"
 )
 
 // Server represents the HTTP server
@@ -123,25 +122,25 @@ func (s *Server) buildMiddlewareStack() http.Handler {
 	// Apply middleware in reverse order (last applied is executed first)
 
 	// Security headers
-	handler = middleware.Security(handler)
+	handler = Security(handler)
 
 	// CORS (if needed)
-	handler = middleware.CORS(handler)
+	handler = CORS(handler)
 
 	// Rate limiting
-	handler = middleware.RateLimit(s.logger, s.config.RateLimitPerMinute)(handler)
+	handler = RateLimit(s.logger, s.config.RateLimitPerMinute)(handler)
 
 	// Request timeout
-	handler = middleware.Timeout(s.config.WriteTimeout)(handler)
+	handler = Timeout(s.config.WriteTimeout)(handler)
 
 	// Logging
-	handler = middleware.Logging(s.logger)(handler)
+	handler = Logging(s.logger)(handler)
 
 	// Recovery (should be first to catch all panics)
-	handler = middleware.Recovery(s.logger)(handler)
+	handler = Recovery(s.logger)(handler)
 
 	// Request ID (should be very first to add ID to all requests)
-	handler = middleware.RequestID(handler)
+	handler = RequestID(handler)
 
 	return handler
 }

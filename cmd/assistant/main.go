@@ -18,8 +18,7 @@ import (
 	"github.com/izzddalfk/kumote/internal/assistant/adapters/userrepository"
 	"github.com/izzddalfk/kumote/internal/assistant/config"
 	"github.com/izzddalfk/kumote/internal/assistant/core"
-	"github.com/izzddalfk/kumote/internal/assistant/presentation/config"
-	"github.com/izzddalfk/kumote/internal/assistant/presentation/server"
+	"github.com/izzddalfk/kumote/internal/assistant/presentation/rest"
 )
 
 func main() {
@@ -54,7 +53,7 @@ func main() {
 	}
 
 	// Create and start HTTP server
-	httpServer := server.NewServer(cfg, logger, assistantService)
+	httpServer := rest.NewServer(cfg, logger, assistantService)
 
 	logger.InfoContext(ctx, "Starting Remote Work Telegram Assistant",
 		"version", cfg.Version,
