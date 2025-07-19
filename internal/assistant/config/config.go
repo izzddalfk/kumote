@@ -8,6 +8,14 @@ import (
 	"time"
 )
 
+type ApplicationConfig struct {
+	ProjectsPath           string  `cfg:"projects_path" cfgRequired:"true"`
+	ClaudeCodePath         string  `cfg:"claude_code_path" cfgRequired:"true"`
+	ProjectIndexPath       string  `cfg:"project_index_path"`
+	TelegramBotToken       string  `cfg:"kumote_telegram_bot_token" cfgRequired:"true"`
+	TelegramAllowedUserIDs []int64 `cfg:"kumote_telegram_allowed_user_ids" cfgRequired:"true"`
+}
+
 // ServerConfig holds server configuration
 type ServerConfig struct {
 	// Server settings

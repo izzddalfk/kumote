@@ -16,6 +16,7 @@ import (
 	"github.com/izzddalfk/kumote/internal/assistant/adapters/scanner"
 	"github.com/izzddalfk/kumote/internal/assistant/adapters/telegram"
 	"github.com/izzddalfk/kumote/internal/assistant/adapters/userrepository"
+	"github.com/izzddalfk/kumote/internal/assistant/config"
 	"github.com/izzddalfk/kumote/internal/assistant/core"
 	"github.com/izzddalfk/kumote/internal/assistant/presentation/config"
 	"github.com/izzddalfk/kumote/internal/assistant/presentation/server"
