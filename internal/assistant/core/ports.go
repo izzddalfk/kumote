@@ -40,12 +40,6 @@ type ProjectScanner interface {
 	GetProjectDirectory(query string) (string, error)
 }
 
-// CommandRepository defines interface for managing command history
-type CommandRepository interface {
-	// SaveCommand saves command to history
-	SaveCommand(ctx context.Context, cmd *Command) error
-}
-
 // MetricsCollector defines interface for collecting usage metrics
 type MetricsCollector interface {
 	// RecordCommandExecution records metrics for command execution

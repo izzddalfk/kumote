@@ -16,18 +16,16 @@ type Service struct {
 	rateLimiter      RateLimiter
 	userRepo         UserRepository
 	projectScanner   ProjectScanner
-	commandRepo      CommandRepository
 	metricsCollector MetricsCollector
 }
 
 type ServiceConfig struct {
-	AiExecutor       AIAgent           `validate:"nonnil"`
-	Telegram         TelegramStorage   `validate:"nonnil"`
-	RateLimiter      RateLimiter       `validate:"nonnil"`
-	UserRepo         UserRepository    `validate:"nonnil"`
-	ProjectScanner   ProjectScanner    `validate:"nonnil"`
-	CommandRepo      CommandRepository `validate:"nonnil"`
-	MetricsCollector MetricsCollector  `validate:"nonnil"`
+	AiExecutor       AIAgent          `validate:"nonnil"`
+	Telegram         TelegramStorage  `validate:"nonnil"`
+	RateLimiter      RateLimiter      `validate:"nonnil"`
+	UserRepo         UserRepository   `validate:"nonnil"`
+	ProjectScanner   ProjectScanner   `validate:"nonnil"`
+	MetricsCollector MetricsCollector `validate:"nonnil"`
 }
 
 // NewService creates a new assistant service with all dependencies
@@ -41,7 +39,6 @@ func NewService(config ServiceConfig) (*Service, error) {
 		rateLimiter:      config.RateLimiter,
 		userRepo:         config.UserRepo,
 		projectScanner:   config.ProjectScanner,
-		commandRepo:      config.CommandRepo,
 		metricsCollector: config.MetricsCollector,
 	}, nil
 }
@@ -83,13 +80,6 @@ func (s *Service) ProcessCommand(ctx context.Context, cmd Command) (*QueryResult
 			Error:   "You are not authorized to use this assistant.",
 		}
 		return result, nil
-	}
-
-	// Save command to history
-	if err := s.commandRepo.SaveCommand(ctx, &cmd); err != nil {
-		slog.WarnContext(ctx, "Failed to save command",
-			slog.String("command_id", cmd.ID),
-			slog.String("error", err.Error()))
 	}
 
 	// use project index scanner to determine the working directory

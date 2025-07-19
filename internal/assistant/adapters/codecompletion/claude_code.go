@@ -27,8 +27,8 @@ type ClaudeCodeAgentConfig struct {
 	Debug          bool
 }
 
-// NewClaudeExecutor creates a new instance of ClaudeExecutor
-func NewClaudeExecutor(config ClaudeCodeAgentConfig) (*ClaudeCodeAgent, error) {
+// NewClaudeCodeAgent creates a new instance of ClaudeExecutor
+func NewClaudeCodeAgent(config ClaudeCodeAgentConfig) (*ClaudeCodeAgent, error) {
 	if err := validator.Validate(config); err != nil {
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}

@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/izzddalfk/kumote/internal/assistant/adapters/codecompletion"
-	"github.com/izzddalfk/kumote/internal/assistant/adapters/commandrepository"
 	"github.com/izzddalfk/kumote/internal/assistant/adapters/metricscollector"
 	"github.com/izzddalfk/kumote/internal/assistant/adapters/ratelimiter"
 	"github.com/izzddalfk/kumote/internal/assistant/adapters/scanner"
@@ -27,36 +26,30 @@ func main() {
 	ctx := context.Background()
 
 	// Load configuration
-	cfg, err := config.LoadConfig()
+	configs, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+		log.Fatalf("failed to load configuration: %v", err)
 	}
 
 	// Setup logger
-	logger := setupLogger(cfg.LogLevel, cfg.IsDevelopment())
-
-	// Validate configuration
-	if err := validateConfig(cfg); err != nil {
-		logger.ErrorContext(ctx, "Configuration validation failed", "error", err)
-		os.Exit(1)
-	}
+	setupLogger(configs.ApplicationConfig.LogLevel)
 
 	// Initialize dependencies
-	deps, err := initializeDependencies(cfg, logger)
+	deps, err := initializeDependencies(configs)
 	if err != nil {
-		log.Fatalf("Failed to initialize dependencies: %v", err)
+		log.Fatalf("failed to initialize dependencies: %v", err)
 	}
 
 	// Initialize assistant service
-	assistantService, err := initializeAssistantService(ctx, deps, logger)
+	assistantService, err := core.NewService(*deps)
 	if err != nil {
-		log.Fatalf("Failed to initialize assistant service: %v", err)
+		log.Fatalf("failed to initialize assistant service: %v", err)
 	}
 
 	// Create and start HTTP server
 	httpServer, err := rest.NewServer(rest.ServerConfig{
 		AssistantService: assistantService,
-		Port:             ":3000",
+		Port:             fmt.Sprintf(":%d", configs.ServerConfig.Port),
 		ReadTimeout:      time.Second * 5,
 		WriteTimeout:     time.Second * 30,
 	})
@@ -64,28 +57,23 @@ func main() {
 		log.Fatalf("failed to create HTTP server: %v", err)
 	}
 
-	logger.InfoContext(ctx, "Kumote started",
-		"version", cfg.Version,
-		"environment", cfg.Environment,
-		"port", cfg.Port,
-	)
+	slog.InfoContext(ctx, fmt.Sprintf("Kumote started at port: %d", configs.ServerConfig.Port))
 
 	// Start server (this blocks until shutdown)
 	if err := httpServer.Start(); err != nil {
-		logger.ErrorContext(ctx, "Server error", "error", err)
+		slog.ErrorContext(ctx, "Server error", "error", err)
 		os.Exit(1)
 	}
 
-	logger.InfoContext(ctx, "Application shutdown completed")
+	slog.InfoContext(ctx, "Application shutdown completed")
 }
 
 // Dependencies holds all initialized dependencies
 type Dependencies struct {
-	AICodeExecutor    core.AIAgent
-	UserRepository    core.UserRepository
-	CommandRepository core.CommandRepository
-	MetricsCollector  core.MetricsCollector
-	RateLimiter       core.RateLimiter
+	AICodeExecutor   core.AIAgent
+	UserRepository   core.UserRepository
+	MetricsCollector core.MetricsCollector
+	RateLimiter      core.RateLimiter
 }
 
 // Cleanup cleans up all dependencies
@@ -95,7 +83,7 @@ func (d *Dependencies) Cleanup() {
 }
 
 // setupLogger creates and configures the logger
-func setupLogger(logLevel string, isDevelopment bool) *slog.Logger {
+func setupLogger(logLevel string) {
 	var level slog.Level
 	switch logLevel {
 	case "info":
@@ -113,59 +101,36 @@ func setupLogger(logLevel string, isDevelopment bool) *slog.Logger {
 	}
 
 	// Use JSON handler
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
-	slog.SetDefault(logger)
-
-	return logger
-}
-
-// validateConfig validates the loaded configuration
-func validateConfig(cfg *config.ServerConfig) error {
-	// Basic validation is already done in config.Validate()
-	// Add any additional validation here if needed
-
-	if len(cfg.AllowedUserIDs) == 0 {
-		return fmt.Errorf("ALLOWED_USER_IDS environment variable is required")
-	}
-
-	// Validate paths exist
-	if _, err := os.Stat(cfg.DevelopmentPath); os.IsNotExist(err) {
-		return fmt.Errorf("development path does not exist: %s", cfg.DevelopmentPath)
-	}
-
-	return nil
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, opts)))
 }
 
 // initializeDependencies initializes all external dependencies
-func initializeDependencies(cfg *config.ServerConfig, logger *slog.Logger) (*core.ServiceConfig, error) {
+func initializeDependencies(cfg *config.Configs) (*core.ServiceConfig, error) {
 	// Create data directories if they don't exist
 	dataPath := "data"
 	os.MkdirAll(dataPath, 0755)
 
 	// Initialize metrics collector
 	metricsDbPath := filepath.Join(dataPath, "metrics.db")
-	metricsCollector, err := metricscollector.NewMetricsCollector(metricsDbPath, logger)
+	metricsCollector, err := metricscollector.NewMetricsCollector(metricsDbPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize metrics collector: %w", err)
 	}
 
-	// Initialize command repository
-	commandsDbPath := filepath.Join(dataPath, "commands.db")
-	commandRepo, err := commandrepository.NewCommandRepository(commandsDbPath, logger)
+	// Initialize AI Agent
+	aiExecutor, err := codecompletion.NewClaudeCodeAgent(codecompletion.ClaudeCodeAgentConfig{
+		ExecutablePath: cfg.ApplicationConfig.ClaudeCodePath,
+		DefaultModel:   "sonnet",
+		BaseWorkDir:    cfg.ApplicationConfig.ProjectsPath,
+		Debug:          true, // TODO: Setup this flag
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize command repository: %w", err)
+		return nil, fmt.Errorf("failed to initialize ai agent: %w", err)
 	}
-
-	// Initialize AI code executor
-	claudeExecutable := "claude"
-	if cfg.ClaudeCodePath != "" {
-		claudeExecutable = cfg.ClaudeCodePath
-	}
-	aiExecutor := codecompletion.NewClaudeExecutor(claudeExecutable, "sonnet", cfg.DevelopmentPath, cfg.IsDevelopment())
 
 	// Initialize project scanner
 	projectScanner, err := scanner.NewFileSystemScanner(scanner.FileSystemScannerConfig{
-		ProjectIndexPath:       os.Getenv("PROJECT_INDEX_PATH"),
+		ProjectIndexPath:       cfg.ApplicationConfig.ProjectIndexPath,
 		WordProximityThreshold: 0.5, // use lower threshold for less permissive matching
 	})
 	if err != nil {
@@ -174,35 +139,27 @@ func initializeDependencies(cfg *config.ServerConfig, logger *slog.Logger) (*cor
 
 	// Initialize Telegram storage
 	telegramStorage, err := telegram.NewClient(telegram.ClientConfig{
-		BaseURL:  cfg.TelegramBaseURL,
-		BotToken: cfg.TelegramBotToken,
+		BaseURL:  cfg.ApplicationConfig.TelegramBaseURL,
+		BotToken: cfg.ApplicationConfig.TelegramBotToken,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize Telegram client: %w", err)
+	}
+
+	// Initialize user repository
+	userRepo, err := userrepository.NewUserRepository(userrepository.UserRepositoryConfig{
+		AllowedUserIDsString: cfg.ApplicationConfig.TelegramAllowedUserIDs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize user repository: %w", err)
 	}
 
 	return &core.ServiceConfig{
 		AiExecutor:       aiExecutor,
 		Telegram:         telegramStorage,
 		ProjectScanner:   projectScanner,
-		CommandRepo:      commandRepo,
 		MetricsCollector: metricsCollector,
-		UserRepo:         userrepository.NewUserRepository(logger),
-		RateLimiter:      ratelimiter.NewRateLimiter(cfg.RateLimitPerMinute, logger),
+		UserRepo:         userRepo,
+		RateLimiter:      ratelimiter.NewRateLimiter(2), // TODO: revisit this value later
 	}, nil
-}
-
-// initializeAssistantService creates the main assistant service
-func initializeAssistantService(ctx context.Context, config *core.ServiceConfig, logger *slog.Logger) (core.AssistantService, error) {
-	logger.InfoContext(ctx, "Initializing assistant service")
-
-	// Create the actual service with all dependencies
-	service, err := core.NewService(*config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create assistant service: %w", err)
-	}
-
-	logger.InfoContext(ctx, "Assistant service initialized successfully")
-
-	return service, nil
 }
