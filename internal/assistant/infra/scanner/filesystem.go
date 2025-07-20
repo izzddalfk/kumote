@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/knightazura/kumote/internal/shared/utils/wordsimilarity"
+	"github.com/izzddalfk/kumote/internal/shared/utils/wordsimilarity"
 	"gopkg.in/validator.v2"
 )
 

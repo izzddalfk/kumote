@@ -1,0 +1,68 @@
+name: Build & Test Services
+
+on:
+  pull_request:
+    paths-ignore:
+      - "Makefile"
+      - "**.md"
+      - "docs/**"
+  push:
+    paths-ignore:
+      - "Makefile"
+      - "**.md"
+      - "docs/**"
+    branches:
+      - main
+
+  workflow_call:
+    inputs:
+      checkout-ref:
+        type: string
+        required: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.checkout-ref || github.sha }}
+
+      - name: Create .env file
+        run: |
+          echo "KUMOTE_TELEGRAM_BOT_TOKEN=dummy" >> .env
+          echo "KUMOTE_TELEGRAM_CHAT_ID=dummy" >> .env
+          echo "TELEGRAM_ALLOWED_USER_IDS=dummy" >> .env
+          echo "PROJECTS_PATH=dummy" >> .env
+          echo "CLAUDE_CODE_PATH=dummy" >> .env
+          echo "PROJECT_INDEX_PATH=dummy" >> .env
+
+      - name: Build The Project
+        run: make build
+
+      # TODO: Notify to somewhere on failure
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.checkout-ref || github.sha }}
+
+      - name: Create .env file
+        run: |
+          echo "KUMOTE_TELEGRAM_BOT_TOKEN=dummy" >> .env
+          echo "KUMOTE_TELEGRAM_CHAT_ID=dummy" >> .env
+          echo "TELEGRAM_ALLOWED_USER_IDS=dummy" >> .env
+          echo "PROJECTS_PATH=dummy" >> .env
+          echo "CLAUDE_CODE_PATH=dummy" >> .env
+          echo "PROJECT_INDEX_PATH=dummy" >> .env
+
+      - name: Run Test
+        run: make test
+
+      # TODO: Notify to somewhere on failure
