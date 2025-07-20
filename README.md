@@ -4,6 +4,20 @@
 
 A Telegram-based remote development assistant that connects you to your local projects through AI. Query your codebase, browse project structures, and get intelligent analysis of your development work from anywhere - all through simple Telegram messages.
 
+**Background Story:**
+
+It started on an ordinary morning. I was outside, mid-workout (part of my life-boot routine), when my mind drifted to the day’s tasks. A project lingered on my to-do list _—Project A—_ and I caught myself thinking:
+
+_"What if I could ask Claude about this right now? Get a head start before I even sit down at my desk? I’d know exactly what to prioritize—or if I should pivot entirely."_
+
+But there was a problem: **I wasn’t at my computer**. My AI tools were tethered to my workstation, and inspiration struck when I was away from it.
+
+That’s when the idea clicked:
+
+_"I need a bridge—a way to query Claude about my local projects from anywhere, as easily as sending a Telegram message."_
+
+**Kumote was born**—a tool that turns this workflow into reality. Now, whether I’m working out, traveling, or just away from my desk, my projects are always a question away.
+
 # Table of Contents
 
 - [Features](#features)
@@ -24,8 +38,8 @@ A Telegram-based remote development assistant that connects you to your local pr
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Telegram Bot  │───▶│ Cloudflare      │───▶│   Go Server     │
-│   (User Input)  │    │   Tunnel        │    │   (Wrapper)     │
+│   Telegram Bot  │───▶│    Tunneling    │───▶│   Go Server     │
+│   (User Input)  │    │     Service     │    │   (Wrapper)     │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                                                         │
                                                ┌─────────────────┐
@@ -140,7 +154,30 @@ There's also open source alternative called [OpenCode](https://github.com/sst/op
 
 ### Privacy
 
-IN PROGRESS
+**Data Handling Disclaimer**
+
+This project (Kumote) is a self-hosted remote assistant tool that interfaces with third-party AI agents (e.g., Claude, Gemini, or other CLI-based AI services). By using this software, you acknowledge and agree to the following:
+
+1. No Data Retention by Kumote:
+
+   - This tool does not store, log, or transmit your data to the project owner or any external servers controlled by this project.
+   - All interactions occur locally or through the third-party AI services you configure.
+
+2. Third-Party AI Providers:
+
+   - When you use Kumote with services like Claude Code, Gemini CLI, or similar AI agents:
+     - Your data (inputs/outputs) is subject to the privacy policies of those providers.
+     - We do not control how these third parties process, store, or use your data.
+
+3. Your Responsibility:
+
+   - You are solely responsible for:
+     - Configuring Kumote to use AI providers compliant with your data privacy requirements.
+     - Ensuring sensitive data (e.g., PII, secrets) is not submitted to untrusted AI services.
+
+4. Self-Hosted Nature:
+
+   - Since Kumote runs on your infrastructure, all data stays within your control unless explicitly shared with third-party AI APIs.
 
 ## Planned Features
 
@@ -149,10 +186,10 @@ IN PROGRESS
 - [ ] **Long Polling Interface** - Implement long polling interface for Telegram to avoid webhook setup.
 - [ ] **Improve Project Detection** - Currently Kumote will determine the project by check words from message one by one. This is not efficient and can be improved by using more advanced techniques like fuzzy matching or regex.
 
-## License
-
-This project is licensed under the AGPL-v3.0 License. See the [LICENSE](LICENSE) file for details.
-
 ## Contributing
 
 IN PROGRESS
+
+## License
+
+This project is licensed under the AGPL-v3.0 License. See the [LICENSE](LICENSE) file for details.
