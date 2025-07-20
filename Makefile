@@ -1,3 +1,5 @@
+.PHONY: *
+
 include .env
 export $(shell sed 's/=.*//' .env)
 
@@ -27,3 +29,6 @@ test-all:
 	TELEGRAM_TEST_CHAT_ID=$$KUMOTE_TELEGRAM_CHAT_ID \
 	RUN_INTEGRATION_TESTS=true \
 	go test -v ./...
+
+build:
+	docker build --no-cache -t kumote-assistant -f ./build/package/assistant/Dockerfile .
