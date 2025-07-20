@@ -30,6 +30,15 @@ jobs:
         with:
           ref: ${{ inputs.checkout-ref || github.sha }}
 
+      - name: Create .env file
+        run: |
+          echo "KUMOTE_TELEGRAM_BOT_TOKEN="dummy" >> .env
+          echo "KUMOTE_TELEGRAM_CHAT_ID="dummy" >> .env
+          echo "TELEGRAM_ALLOWED_USER_IDS="dummy" >> .env
+          echo "PROJECTS_PATH="dummy" >> .env
+          echo "CLAUDE_CODE_PATH="dummy" >> .env
+          echo "PROJECT_INDEX_PATH="dummy" >> .env
+
       - name: Build The Project
         run: make build
 
@@ -43,6 +52,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.checkout-ref || github.sha }}
+
+      - name: Create .env file
+        run: |
+          echo "KUMOTE_TELEGRAM_BOT_TOKEN="dummy" >> .env
+          echo "KUMOTE_TELEGRAM_CHAT_ID="dummy" >> .env
+          echo "TELEGRAM_ALLOWED_USER_IDS="dummy" >> .env
+          echo "PROJECTS_PATH="dummy" >> .env
+          echo "CLAUDE_CODE_PATH="dummy" >> .env
+          echo "PROJECT_INDEX_PATH="dummy" >> .env
 
       - name: Run Test
         run: make test
