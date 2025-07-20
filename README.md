@@ -4,8 +4,8 @@
 
 A Telegram-based remote development assistant that connects you to your local projects through AI. Query your codebase, browse project structures, and get intelligent analysis of your development work from anywhere - all through simple Telegram messages.
 
-Table of Contents
-=================
+# Table of Contents
+
 - [Features](#features)
 - [Architecture](#architecture)
 - [Usage Examples](#usage-examples)
@@ -42,7 +42,7 @@ Table of Contents
 
 ### Prerequisites
 
-- Go 1.21+
+- Go 1.24+
 - Telegram Bot Token ([Get one from @BotFather](https://t.me/botfather))
 - Claude Code CLI installed. Check this [documentation](https://docs.anthropic.com/en/docs/claude-code/setup).
 - Tunneling service (e.g., Cloudflare Tunnel)
@@ -52,11 +52,11 @@ Table of Contents
 ### 1. Download Kumote
 
 ```bash
-git clone https://github.com/yourusername/kumote.git
+git clone https://github.com/izzddalfk/kumote.git
 cd kumote
 
 # Copy environment template
-cp .env.example .env
+cp env.example .env
 ```
 
 ### 2. Setup Kumote
@@ -77,7 +77,17 @@ make run
 It should run in port 3377. Check with
 
 ```http
-curl http://localhost:3377/health
+curl http://localhost:3377
+```
+
+If you get response like below, it means you're good to go!
+
+```json
+{
+  "success": true,
+  "data": "It's running!",
+  "timestamp": 1752982338
+}
 ```
 
 > Development or customize Kumote with auto-refresh for changes in the codebase
