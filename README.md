@@ -20,8 +20,9 @@ _"I need a bridge—a way to query Claude about my local projects from anywhere,
 
 # Table of Contents
 
-- [Features](#features)
-- [Architecture](#architecture)
+- [Features](#-features)
+- [Architecture](#-architecture)
+- [How to Use](#-how-to-use)
 - [Usage Examples](#-usage-examples)
 - [Notices](#notices)
 - [Planned Features](#planned-features)
@@ -38,32 +39,32 @@ _"I need a bridge—a way to query Claude about my local projects from anywhere,
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Telegram Bot  │───▶│    Tunneling    │───▶│   Go Server     │
+│   Telegram Bot  │───▶│    Tunneling    │───▶│     Kumote      │
 │   (User Input)  │    │     Service     │    │   (Wrapper)     │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                                                         │
                                                ┌─────────────────┐
                                                │ Claude Code CLI │
-                                               │  (AI Engine)    │
+                                               │   (AI Agent)    │
                                                └─────────────────┘
                                                         │
                                                ┌─────────────────┐
-                                               │  Development    │
-                                               │    Projects     │
-                                               │  (~/Development)│
+                                               │  Local Folder   │
+                                               │   of Projects   │
                                                └─────────────────┘
 ```
 
-## 🚀 Quick Start
+## 🚀 How to Use
 
 ### Prerequisites
 
 - Go 1.24+
-- Telegram Bot Token ([Get one from @BotFather](https://t.me/botfather))
+- Telegram Bot Token. If you don't have bot yet, ([create one from @BotFather](https://t.me/botfather))
+- Your Telegram user ID. Chat `/start` to [@userinfobot](https://t.me/userinfobot) to get it.
 - Claude Code CLI installed. Check this [documentation](https://docs.anthropic.com/en/docs/claude-code/setup).
 - Tunneling service (e.g., Cloudflare Tunnel)
 
-> Note: To use Claude Code, you need at least Pro subscription to Claude.
+> ⚠️ Note: To use Claude Code, you need at least individual Pro subscription to Claude.
 
 ### 1. Download Kumote
 
@@ -108,6 +109,7 @@ If you get response like below, it means you're good to go!
 
 > Development or customize Kumote with auto-refresh for changes in the codebase
 > run this command instead
+>
 > `make dev`
 
 ### 4. Setup Tunnel
