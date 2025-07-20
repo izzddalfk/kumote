@@ -1,271 +1,197 @@
-# 🤖 Kumote - Remote Work Telegram Assistant
+# 🤖 Kumote - Remote Work Assistant
 
 **KumoTe** (雲手) - Japanese for "Cloud Hand" - Your remote development companion that extends your coding capabilities through the cloud.
 
-A secure Telegram bot that provides remote access to your local development environment through Claude Code CLI. Control your projects, execute commands, and manage your development workflow from anywhere.
+A Telegram-based remote development assistant that connects you to your local projects through AI. Query your codebase, browse project structures, and get intelligent analysis of your development work from anywhere - all through simple Telegram messages.
+
+**Background Story:**
+
+It started on an ordinary morning. I was outside, mid-workout (part of my life-boot routine), when my mind drifted to the day’s tasks. A project lingered on my to-do list _—Project A—_ and I caught myself thinking:
+
+_"What if I could ask Claude about this right now? Get a head start before I even sit down at my desk? I’d know exactly what to prioritize—or if I should pivot entirely."_
+
+But there was a problem: **I wasn’t at my computer**. My AI tools were tethered to my workstation, and inspiration struck when I was away from it.
+
+That’s when the idea clicked:
+
+_"I need a bridge—a way to query Claude about my local projects from anywhere, as easily as sending a Telegram message."_
+
+**Kumote was born**—a tool that turns this workflow into reality. Now, whether I’m working out, traveling, or just away from my desk, my projects are always a question away.
+
+# Table of Contents
+
+- [Features](#-features)
+- [Architecture](#-architecture)
+- [How to Use](#-how-to-use)
+- [Usage Examples](#-usage-examples)
+- [Notices](#notices)
+- [Planned Features](#planned-features)
 
 ## ✨ Features
 
-- 🔐 **Secure Remote Access** - Access your development machine through encrypted Telegram messages
-- 🤖 **AI-Powered Commands** - Leverage Claude Code CLI for intelligent code analysis and execution
+- 🔐 **Secure Remote Access** - Access your development machine through encrypted Telegram messages using your own Bot
+- 🤖 **AI-Powered Analysis** - Leverage Claude Code CLI for intelligent code analysis and exploration
 - 📁 **Smart Project Discovery** - Automatically discovers and indexes your development projects
-- 🎤 **Voice Commands** - Process audio messages for hands-free operation
-- 🚀 **Real-time Responses** - Instant webhook-based communication
-- 📊 **Built-in Monitoring** - Health checks and metrics collection
-- 🛡️ **Enterprise Security** - User whitelisting, rate limiting, and webhook verification
+- 📊 **Command History & Metrics** - SQLite-based storage for command history and execution metrics
+- ⚡ **Asynchronous Processing** - Efficient processing with webhook and background command execution
 
 ## 🏗️ Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Telegram Bot  │───▶│ Cloudflare      │───▶│   Go Server     │
-│   (User Input)  │    │   Tunnel        │    │   (Wrapper)     │
+│   Telegram Bot  │───▶│    Tunneling    │───▶│     Kumote      │
+│   (User Input)  │    │     Service     │    │   (Wrapper)     │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                                                         │
                                                ┌─────────────────┐
                                                │ Claude Code CLI │
-                                               │  (AI Engine)    │
+                                               │   (AI Agent)    │
                                                └─────────────────┘
                                                         │
                                                ┌─────────────────┐
-                                               │  Development    │
-                                               │    Projects     │
-                                               │  (~/Development)│
+                                               │  Local Folder   │
+                                               │   of Projects   │
                                                └─────────────────┘
 ```
 
-## 🚀 Quick Start
+## 🚀 How to Use
 
 ### Prerequisites
 
-- Go 1.21+
-- Telegram Bot Token ([Get one from @BotFather](https://t.me/botfather))
-- Claude Code CLI installed
-- Cloudflare account (for tunnel)
+- Go 1.24+
+- Telegram Bot Token. If you don't have bot yet, ([create one from @BotFather](https://t.me/botfather))
+- Your Telegram user ID. Chat `/start` to [@userinfobot](https://t.me/userinfobot) to get it.
+- Claude Code CLI installed. Check this [documentation](https://docs.anthropic.com/en/docs/claude-code/setup).
+- Tunneling service (e.g., Cloudflare Tunnel)
 
-### 1. Clone & Setup
+> ⚠️ Note: To use Claude Code, you need at least individual Pro subscription to Claude.
+
+### 1. Download Kumote
 
 ```bash
-git clone https://github.com/yourusername/kumote.git
+git clone https://github.com/izzddalfk/kumote.git
 cd kumote
 
 # Copy environment template
-cp .env.example .env
+cp env.example .env
 ```
 
-### 2. Configure Environment
+### 2. Setup Kumote
 
-```bash
-# .env
-TELEGRAM_BOT_TOKEN=your_bot_token_here
-TELEGRAM_WEBHOOK_SECRET=your_webhook_secret
-ALLOWED_USER_IDS=123456789,987654321
-DEVELOPMENT_PATH=/home/user/Development
-CLAUDE_CODE_PATH=/usr/local/bin/claude-code
-```
+Fill all environment variables with your own values in .env file. Then open project index file in `/data/projects-index.json`.
 
-### 3. Run with Docker
+Add any projects that you want to Kumote work with. You can add multiple projects as many as you want by following format that pre-defined in that file.
+
+Keep in mind you need to give full path to the project directory. And it's better to give name to the projects with any name that you naturally use. Because later Kumote will determine which project directory that you want to work with by the name.
+
+### 3. Run Kumote
 
 ```bash
 # Start the application
-docker-compose up --build
-
-# View logs
-docker-compose logs -f telegram-assistant
+make run
 ```
 
-### 4. Setup Cloudflare Tunnel
+It should run in port 3377. Check with
+
+```http
+curl http://localhost:3377
+```
+
+If you get response like below, it means you're good to go!
+
+```json
+{
+  "success": true,
+  "data": "It's running!",
+  "timestamp": 1752982338
+}
+```
+
+> Development or customize Kumote with auto-refresh for changes in the codebase
+> run this command instead
+>
+> `make dev`
+
+### 4. Setup Tunnel
+
+In order Telegram can connect to Kumote in your local machine, the fastest and cheapest way is to use tunneling. In this example, we will use Cloudflare Tunnel. You can use any other tunneling service as well.
 
 ```bash
 # Install cloudflared
+# https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/
+
 # Then run:
-cloudflared tunnel --url localhost:3000
+cloudflared tunnel run --token {YOUR_CLOUDFLARE_TOKEN}
 ```
 
+If tunneling is successful, you should have public-internet that provided by the tunneling service.
+
 ### 5. Register Webhook
+
+Lastly, register the webhook to your Telegram-bot so any messages that your bot receives will be forwarded to Kumote via tunnel.
 
 ```bash
 curl -X POST "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook" \
      -H "Content-Type: application/json" \
-     -d '{"url": "https://your-tunnel-url.trycloudflare.com/telegram-webhook"}'
+     -d '{"url": "https://your-tunnel.domain/telegram"}'
 ```
 
 ## 💬 Usage Examples
 
-### Basic Commands
+If you're reach this state, congratulations! 🎉
 
-```
-📱 User: "show taqwa main.go"
-🤖 Bot: [Returns main.go content from TaqwaBoard project]
+You've successfully setup Kumote and ready to rocks! Now try to send a message to your bot asking anything for your projects like you do with Claude Code CLI from your terminal.
 
-📱 User: "git status all"
-🤖 Bot: [Shows git status for all projects]
+## Notices
 
-📱 User: "update dependencies taqwa"
-🤖 Bot: [Runs dependency update in TaqwaBoard]
-```
+Below are some important notices that you should be aware of from this project.
 
-### Project Shortcuts
+### AI Agent
 
-```yaml
-# Configure in scanner-config.yaml
-shortcuts:
-  taqwa: TaqwaBoard
-  car: CarLogbook
-  jda: Junior-Dev-Acceleration
-```
+Initially, Kumote will use Claude Code CLI as the AI agent. The reason is I personally use Claude Code to interact with my projects for quick analysis and development. That's also the idea why I built this project.
 
-### Voice Commands
+You might not prefer to use it or simply don't have Claude Pro subscription. Therefore you can actually replace it with any other AI agent that you prefer with CLI interfaces. Currently what I've personally tried and works is Gemini CLI. It's totally free (with some usage limitation) and perform faster than Claude. But the quality is not as good as Claude.
 
-- Send voice messages for hands-free operation
-- Automatic speech-to-text conversion
-- Same functionality as text commands
+There's also open source alternative called [OpenCode](https://github.com/sst/opencode) that local LLM for good privacy but I didn't try it yet.
 
-## 🛠️ Development
+### Privacy
 
-### Local Development
+**Data Handling Disclaimer**
 
-```bash
-# Install dependencies
-go mod download
+This project (Kumote) is a self-hosted remote assistant tool that interfaces with third-party AI agents (e.g., Claude, Gemini, or other CLI-based AI services). By using this software, you acknowledge and agree to the following:
 
-# Run tests
-go test ./... -v
+1. No Data Retention by Kumote:
 
-# Run with hot reload
-go run main.go
-```
+   - This tool does not store, log, or transmit your data to the project owner or any external servers controlled by this project.
+   - All interactions occur locally or through the third-party AI services you configure.
 
-### Project Structure
+2. Third-Party AI Providers:
 
-```
-kumote/
-├── main.go                           # Application entry point
-├── internal/
-│   ├── assistant/
-│   │   ├── core/                    # Business logic
-│   │   └── adapters/                # External integrations
-│   └── presentation/
-│       ├── handlers/                # HTTP handlers
-│       ├── middleware/              # HTTP middleware
-│       └── server/                  # Server setup
-├── config/
-│   └── scanner-config.yaml         # Project discovery config
-└── docker-compose.yml              # Deployment setup
-```
+   - When you use Kumote with services like Claude Code, Gemini CLI, or similar AI agents:
+     - Your data (inputs/outputs) is subject to the privacy policies of those providers.
+     - We do not control how these third parties process, store, or use your data.
 
-### Testing
+3. Your Responsibility:
 
-```bash
-# Run all tests
-go test ./...
+   - You are solely responsible for:
+     - Configuring Kumote to use AI providers compliant with your data privacy requirements.
+     - Ensuring sensitive data (e.g., PII, secrets) is not submitted to untrusted AI services.
 
-# Run with coverage
-go test ./... -coverprofile=coverage.out
-go tool cover -html=coverage.out
+4. Self-Hosted Nature:
 
-# Run benchmarks
-go test ./... -bench=. -benchmem
-```
+   - Since Kumote runs on your infrastructure, all data stays within your control unless explicitly shared with third-party AI APIs.
 
-## 📊 Monitoring
+## Planned Features
 
-### Health Check
+- [ ] **Support Session (Claude Code Only)** - Support session for Claude Code CLI to keep the context of the conversation. This is useful for long conversations or when you want to keep the context of the conversation. (In development)
+- [ ] **Support other CLI Agents** - Support for other CLI AI agents. Gemini CLI is in development. Suggestions or contributions are welcome!
+- [ ] **Long Polling Interface** - Implement long polling interface for Telegram to avoid webhook setup.
+- [ ] **Improve Project Detection** - Currently Kumote will determine the project by check words from message one by one. This is not efficient and can be improved by using more advanced techniques like fuzzy matching or regex.
 
-```bash
-curl http://localhost:3000/health
-curl http://localhost:3000/health?detailed=true
-```
+## Contributing
 
-### Metrics
+IN PROGRESS
 
-```bash
-curl http://localhost:3000/metrics
-```
+## License
 
-### Logs
-
-```bash
-# View application logs
-docker-compose logs -f telegram-assistant
-
-# View specific service logs
-docker-compose logs cloudflared
-```
-
-## 🔒 Security
-
-### Authentication
-
-- **User Whitelist**: Only specified Telegram user IDs can access
-- **Webhook Verification**: Telegram webhook signatures validated
-- **Rate Limiting**: Configurable per-user request limits
-
-### Network Security
-
-- **Cloudflare Tunnel**: No direct port exposure
-- **HTTPS Only**: All communication encrypted
-- **No Data Persistence**: Messages not stored locally
-
-### Command Safety
-
-- **Safe Command Whitelist**: Dangerous operations blocked
-- **Path Validation**: Access limited to Development directory
-- **Input Sanitization**: All user input validated
-
-## 🌐 Deployment
-
-### Production Deployment
-
-```bash
-# Build optimized image
-docker build -t kumote:latest .
-
-# Deploy with monitoring
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-```
-
-### Environment Variables
-
-| Variable                | Description                | Default         |
-| ----------------------- | -------------------------- | --------------- |
-| `TELEGRAM_BOT_TOKEN`    | Bot token from @BotFather  | **Required**    |
-| `ALLOWED_USER_IDS`      | Comma-separated user IDs   | **Required**    |
-| `DEVELOPMENT_PATH`      | Path to projects directory | `~/Development` |
-| `SERVER_PORT`           | HTTP server port           | `3000`          |
-| `LOG_LEVEL`             | Logging level              | `info`          |
-| `RATE_LIMIT_PER_MINUTE` | Rate limit per user        | `10`            |
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Write table-driven tests for all new functionality
-- Follow Go best practices and conventions
-- Update documentation for any API changes
-- Ensure all tests pass before submitting PR
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- [Telegram Bot API](https://core.telegram.org/bots/api) for webhook functionality
-- [Claude Code CLI](https://docs.anthropic.com) for AI-powered code execution
-- [Cloudflare Tunnels](https://www.cloudflare.com/products/tunnel/) for secure networking
-
----
-
-**Kumote** - Extending your development reach through the cloud ☁️✋
-
-Telegram Webhooks:
-
-- https://core.telegram.org/bots/webhooks
-- https://core.telegram.org/bots/api#setwebhook
+This project is licensed under the AGPL-v3.0 License. See the [LICENSE](LICENSE) file for details.
