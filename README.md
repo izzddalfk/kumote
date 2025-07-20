@@ -8,7 +8,9 @@ A Telegram-based remote development assistant that connects you to your local pr
 
 - [Features](#features)
 - [Architecture](#architecture)
-- [Usage Examples](#usage-examples)
+- [Usage Examples](#-usage-examples)
+- [Notices](#notices)
+- [Planned Features](#planned-features)
 
 ## ✨ Features
 
@@ -141,5 +143,16 @@ There's also open source alternative called [OpenCode](https://github.com/sst/op
 IN PROGRESS
 
 ## Planned Features
+
+- [ ] **Support Session (Claude Code Only)** - Support session for Claude Code CLI to keep the context of the conversation. This is useful for long conversations or when you want to keep the context of the conversation. (In development)
+- [ ] **Support other CLI Agents** - Support for other CLI AI agents. Gemini CLI is in development. Suggestions or contributions are welcome!
+- [ ] **Long Polling Interface** - Implement long polling interface for Telegram to avoid webhook setup.
+- [ ] **Improve Project Detection** - Currently Kumote will determine the project by check words from message one by one. This is not efficient and can be improved by using more advanced techniques like fuzzy matching or regex.
+
+## License
+
+This project is licensed under the AGPL-v3.0 License. See the [LICENSE](LICENSE) file for details.
+
+## Contributing
 
 IN PROGRESS
